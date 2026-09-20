@@ -1,0 +1,36 @@
+{
+  "mappings": {
+    "com/anotherstar/core/mixin/EntityMixin": {
+      "isInvisibleTo": "Lnet/minecraft/world/entity/Entity;m_20177_(Lnet/minecraft/world/entity/player/Player;)Z"
+    },
+    "com/anotherstar/core/mixin/InventoryMixin": {
+      "dropAll": "Lnet/minecraft/world/entity/player/Inventory;m_36071_()V",
+      "clearContent": "Lnet/minecraft/world/entity/player/Inventory;m_6211_()V"
+    },
+    "com/anotherstar/core/mixin/LivingEntityMixin": {
+      "getMaxHealth": "Lnet/minecraft/world/entity/LivingEntity;m_21233_()F",
+      "getHealth": "Lnet/minecraft/world/entity/LivingEntity;m_21223_()F"
+    },
+    "com/anotherstar/core/mixin/ServerGamePacketListenerImplMixin": {
+      "disconnect": "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;m_9942_(Lnet/minecraft/network/chat/Component;)V"
+    }
+  },
+  "data": {
+    "searge": {
+      "com/anotherstar/core/mixin/EntityMixin": {
+        "isInvisibleTo": "Lnet/minecraft/world/entity/Entity;m_20177_(Lnet/minecraft/world/entity/player/Player;)Z"
+      },
+      "com/anotherstar/core/mixin/InventoryMixin": {
+        "dropAll": "Lnet/minecraft/world/entity/player/Inventory;m_36071_()V",
+        "clearContent": "Lnet/minecraft/world/entity/player/Inventory;m_6211_()V"
+      },
+      "com/anotherstar/core/mixin/LivingEntityMixin": {
+        "getMaxHealth": "Lnet/minecraft/world/entity/LivingEntity;m_21233_()F",
+        "getHealth": "Lnet/minecraft/world/entity/LivingEntity;m_21223_()F"
+      },
+      "com/anotherstar/core/mixin/ServerGamePacketListenerImplMixin": {
+        "disconnect": "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;m_9942_(Lnet/minecraft/network/chat/Component;)V"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+	"type" : "minecraft:crafting_shaped",
+	"group" : "lolipickaxe:loli_card_online",
+	"result" : {
+		"item" : "lolipickaxe:loli_card_online",
+		"count" : 1
+	},
+	"pattern" : ["XXX", "XYX", "XXX"],
+	"key" : {
+		"X" : {
+			"item" : "minecraft:leather"
+		},
+		"Y" : {
+			"item" : "minecraft:diamond"
+		}
+	}
+}

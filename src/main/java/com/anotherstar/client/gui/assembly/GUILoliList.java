@@ -1,0 +1,194 @@
+package com.anotherstar.client.gui.assembly;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+
+public abstract class GUILoliList {
+
+	protected static final ResourceLocation WIDGETS_LOCATION = new ResourceLocation("textures/gui/widgets.png");
+
+	protected int xWidth;
+	protected int yHeight;
+	public int xPosition;
+	public int yPosition;
+	public double scroll = 0.0D;
+	public int numElements = 0;
+	public int elementWidth;
+	public int elementHeight;
+	public int elementsPerLine;
+	public int selected = -1;
+	public boolean scrolling;
+	public int dragged = -1;
+	public int dragYOffset = 0;
+	public int dragXOffset = 0;
+	public int dragDelay = 0;
+
+	public GUILoliList(int xPosition, int yPosition, int width, int height, int numElements, int elementWidth, int elementHeight) {
+		this.xWidth = width;
+		this.yHeight = height;
+		this.xPosition = xPosition;
+		this.yPosition = yPosition;
+		this.numElements = numElements;
+		this.elementWidth = elementWidth;
+		this.elementHeight = elementHeight;
+		this.elementsPerLine = ((this.xWidth - 20) / elementWidth);
+		if (this.elementsPerLine < 1) {
+			this.elementsPerLine = 1;
+		}
+	}
+
+	protected static boolean isLeftMouseDown() {
+		return GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+	}
+
+	public void draw(GuiGraphics guiGraphics, int x, int y) {
+		guiGraphics.fillGradient(xPosition, yPosition, xPosition + xWidth, yPosition + yHeight, -1072689136, -804253680);
+		guiGraphics.blit(WIDGETS_LOCATION, xPosition + xWidth - 20, yPosition + (int) (scroll * (yHeight - 20)), 0, 66, 10, 20);
+		guiGraphics.blit(WIDGETS_LOCATION, xPosition + xWidth - 10, yPosition + (int) (scroll * (yHeight - 20)), 190, 66, 10, 20);
+		if ((dragged > -1) && (dragDelay == 0) && (dragged < numElements) && (x >= xPosition) && (y >= yPosition) && (x < xPosition + xWidth - 25) && (y < yPosition + yHeight)) {
+			int scrollOffset = (int) (scroll * elementHeight * (numElements / elementsPerLine));
+			int moused = (int) (y - yPosition + scrollOffset) / elementHeight * elementsPerLine + (x - xPosition) / elementWidth;
+			if (moused < numElements) {
+				int yOffset = y - yPosition - (y - yPosition + scrollOffset) % elementHeight;
+				int xOffset = x - xPosition - (x - xPosition) % elementWidth;
+				drawBorder(guiGraphics, xPosition + xOffset - 0, yPosition + yOffset - 2, elementWidth + 5, elementHeight + 4, 0xFFFF0000);
+			}
+		}
+		for (int i = 0; i < numElements; i++) {
+			if ((i / elementsPerLine * elementHeight <= scroll * elementHeight * (numElements / elementsPerLine) + yHeight - elementHeight) && (i / elementsPerLine * elementHeight >= scroll * elementHeight * (numElements / elementsPerLine))) {
+				int yOffset = (int) (-scroll * elementHeight * (numElements / elementsPerLine)) + i / elementsPerLine * elementHeight;
+				int xOffset = i % elementsPerLine * elementWidth;
+				if (i != selected) {
+					drawElement(guiGraphics, i, xOffset, yOffset);
+				}
+			}
+		}
+		if ((selected != -1) && (selected / elementsPerLine * elementHeight <= scroll * elementHeight * (numElements / elementsPerLine) + yHeight - elementHeight) && (selected / elementsPerLine * elementHeight >= scroll * elementHeight * (numElements / elementsPerLine)) && (numElements != 0)) {
+			int yOffset = (int) (-scroll * elementHeight * (numElements / elementsPerLine)) + selected / elementsPerLine * elementHeight;
+			int xOffset = selected % elementsPerLine * elementWidth;
+			drawBorder(guiGraphics, xPosition + xOffset, yPosition + yOffset - 2, elementWidth + 5, elementHeight + 4, 0xFF7F7F7F);
+			drawElement(guiGraphics, selected, xOffset, yOffset);
+		}
+		if ((dragged > -1) && (dragDelay == 0)) {
+			if (dragged < numElements) {
+				drawElement(guiGraphics, dragged, x - xPosition + dragXOffset, y - yPosition + dragYOffset);
+			} else {
+				dragged = -1;
+			}
+		}
+	}
+
+	/** 用两层矩形模拟原实现的 2D 描边。 */
+	private void drawBorder(GuiGraphics guiGraphics, int x, int y, int width, int height, int color) {
+		guiGraphics.fill(x, y, x + width, y + height, color);
+		guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xFF000000);
+	}
+
+	public void update(int x, int y) {
+		if (dragDelay > 0) {
+			dragDelay += 1;
+		}
+		if (dragDelay > 10) {
+			dragDelay = 0;
+		}
+		if (!isLeftMouseDown()) {
+			if ((dragged > -1) && (dragDelay == 0) && (dragged < numElements) && (x >= xPosition) && (y >= yPosition) && (x < xPosition + xWidth - 25) && (y < yPosition + yHeight)) {
+				int yOffset = (int) (scroll * elementHeight * (numElements / elementsPerLine));
+				int moused = (int) (y - yPosition + yOffset) / elementHeight * elementsPerLine + (x - xPosition) / elementWidth;
+				if (moused < numElements) {
+					moveElement(dragged, moused);
+				}
+			}
+			dragged = -1;
+		}
+		if ((dragged != -1) && (dragDelay == 0)) {
+			if (y < yPosition) {
+				scroll -= yHeight / (numElements / elementsPerLine * elementHeight + yHeight) * 0.05D;
+			}
+			if (y > yPosition + yHeight) {
+				scroll += yHeight / (numElements / elementsPerLine * elementHeight + yHeight) * 0.05D;
+			}
+		}
+		if ((scrolling) && isLeftMouseDown()) {
+			scroll = ((y - (yPosition + 10.0)) / (yHeight - 20.0));
+		} else {
+			scrolling = false;
+		}
+		if (scroll < 0.0D) {
+			scroll = 0.0D;
+		}
+		if (scroll > 1.0D) {
+			scroll = 1.0D;
+		}
+	}
+
+	public void mouseClick(int x, int y) {
+		if ((x >= xPosition) && (y >= yPosition) && (x < xPosition + xWidth - 20) && (y < yPosition + yHeight)) {
+			int yOffset = (int) (scroll * elementHeight * (numElements / elementsPerLine));
+			int tempSelected = (int) (y - yPosition + yOffset) / elementHeight * elementsPerLine + (x - xPosition) / elementWidth;
+			if (tempSelected >= numElements) {
+				tempSelected = numElements - 1;
+			}
+			dragged = tempSelected;
+			dragDelay = 1;
+			dragYOffset = (-(y - yPosition + yOffset) % elementHeight);
+			dragXOffset = (-(x - xPosition) % elementWidth);
+			if (tempSelected != selected) {
+				selected = tempSelected;
+				selectElement();
+			}
+			selected = tempSelected;
+		}
+		if ((x >= xPosition + xWidth - 20) && (y >= yPosition) && (x < xPosition + xWidth) && (y < yPosition + yHeight) && isLeftMouseDown()) {
+			scrolling = true;
+		} else {
+			scrolling = false;
+		}
+	}
+
+	/** 原实现直接读取鼠标滚轮事件，1.20.1 改由 Screen#mouseScrolled 转发。 */
+	public void mouseScrolled(double x, double y, double delta) {
+		if (delta == 0 || x <= xPosition || x >= xPosition + xWidth || y <= yPosition || y >= yPosition + yHeight) {
+			return;
+		}
+		int wheel = delta > 0 ? -1 : 1;
+		scroll += yHeight / (numElements / elementsPerLine * elementHeight + yHeight) * wheel * 0.1D;
+		if (scroll > 1.0D) {
+			scroll = 1.0D;
+		}
+		if (scroll < 0.0D) {
+			scroll = 0.0D;
+		}
+	}
+
+	public void selectElement() {
+	}
+
+	public void drawElement(GuiGraphics guiGraphics, int index, int xOffset, int yOffset) {
+		guiGraphics.drawString(Minecraft.getInstance().font, getElementName(index), xPosition + 2, yPosition + yOffset + 2, getElementColor(index), false);
+	}
+
+	public abstract String getElementName(int index);
+
+	public abstract int getElementColor(int index);
+
+	public abstract void moveElement(int from, int to);
+
+	public void add() {
+		numElements += 1;
+		if (selected == -1) {
+			selected = 0;
+		}
+	}
+
+	public void remove() {
+		numElements -= 1;
+		if (selected >= numElements) {
+			selected = (numElements - 1);
+		}
+	}
+
+}

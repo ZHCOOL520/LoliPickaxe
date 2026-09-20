@@ -1,0 +1,36 @@
+# ================= Gradle =================
+.gradle/
+build/
+# 注意：gradle/wrapper/gradle-wrapper.jar 需要提交，否则别人无法直接用 ./gradlew
+
+# ================= 开发环境运行目录 =================
+# runClient/runServer 生成的世界存档、日志、eula.txt 等
+run/
+run-data/
+
+# ================= IDE =================
+.idea/
+*.iml
+.vscode/
+bin/
+.classpath
+.project
+.settings/
+*.launch
+
+# ================= 日志与临时文件 =================
+*.log
+*.lck
+*.part
+crash-*.txt
+hs_err_pid*.log
+replay_pid*.log
+
+# ================= 打包产物 =================
+*.jar
+# 但 wrapper 必须保留
+!gradle/wrapper/gradle-wrapper.jar
+
+# ================= 参考用的原 1.12.2 源码（不提交）=================
+# 仅作本地移植参考，体积大且属于原项目，不应进入本仓库
+_original_1.12.2/

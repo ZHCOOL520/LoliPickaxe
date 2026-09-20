@@ -1,0 +1,14 @@
+{
+	"type" : "minecraft:crafting_shaped",
+	"group" : "lolipickaxe:loli_diamond_addon",
+	"result" : {
+		"item" : "lolipickaxe:loli_diamond_addon",
+		"count" : 1
+	},
+	"pattern" : ["X"],
+	"key" : {
+		"X" : {
+			"item" : "minecraft:diamond"
+		}
+	}
+}

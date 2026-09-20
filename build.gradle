@@ -1,0 +1,123 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'org.spongepowered.mixin' version '0.7.+'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = 'LoliPickaxe'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+
+        data {
+            workingDirectory project.file('run-data')
+            args '--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources/'),
+                    '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    // mods.toml / pack.mcmeta 含中文，必须显式指定 UTF-8，
+    // 否则会按平台默认编码（本机为 GBK）读写而产生乱码。
+    filteringCharset = 'UTF-8'
+
+    // 注意：Mixin 的 refmap 是 src/main/resources/lolipickaxe.refmap.json（随源码维护）。
+    // 之所以不用 MixinGradle 自动生成：其 0.7.38 版本在 Gradle 8.1.1 下把 refmap 写到
+    // build/tmp/compileJava 后即被清理，最终既不在 build/resources/main 也不在 jar 中，
+    // 导致生产环境（SRG 名称）下 Mixin 因 "No refMap loaded" 而崩溃。
+    // refmap 的维护要求见 README「Mixin 兼容性」章节：新增/改名 Mixin 注入目标时必须同步更新。
+
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: '[1.20.1,1.21)',
+            forge_version          : forge_version,
+            forge_version_range    : '[47,)',
+            loader_version_range   : '[47,)',
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    // refmap 可能同时由 MixinGradle 与 processResources 提供（内容相同），
+    // 这里保留第一份即可，避免 "Entry lolipickaxe.refmap.json is a duplicate" 报错。
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_vendor,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : mod_vendor,
+                'MixinConfigs'            : "${mod_id}.mixins.json"
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    // 输出废弃 API 的具体位置（默认不输出），便于及时替换 Forge 已废弃的接口
+    options.deprecation = true
+}

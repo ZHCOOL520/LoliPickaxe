@@ -1,0 +1,14 @@
+{
+	"type" : "minecraft:crafting_shaped",
+	"group" : "lolipickaxe:loli_nether_star_addon",
+	"result" : {
+		"item" : "lolipickaxe:loli_nether_star_addon",
+		"count" : 1
+	},
+	"pattern" : ["X"],
+	"key" : {
+		"X" : {
+			"item" : "minecraft:nether_star"
+		}
+	}
+}

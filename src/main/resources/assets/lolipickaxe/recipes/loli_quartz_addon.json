@@ -1,0 +1,17 @@
+{
+	"type" : "minecraft:crafting_shaped",
+	"group" : "lolipickaxe:loli_quartz_addon",
+	"result" : {
+		"item" : "lolipickaxe:loli_quartz_addon",
+		"count" : 1
+	},
+	"pattern" : ["XYX", "YXY", "XYX"],
+	"key" : {
+		"X" : {
+			"item" : "minecraft:quartz"
+		},
+		"Y" : {
+			"item" : "minecraft:quartz_block"
+		}
+	}
+}

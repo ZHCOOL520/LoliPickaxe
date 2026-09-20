@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.anotherstar.core.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "lolipickaxe.refmap.json",
+  "mixins": [
+    "LivingEntityMixin",
+    "EntityMixin",
+    "PlayerMixin",
+    "InventoryMixin",
+    "ServerGamePacketListenerImplMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

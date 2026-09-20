@@ -1,0 +1,42 @@
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
+issueTrackerURL = "https://github.com/ZHCOOL520/LoliPickaxe-1.20.1AI/issues"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "ZHCOOL520（1.20.1 Forge 移植）, Is_GK（1.12.2 原作者）"
+credits = '''1.20.1 Forge 移植：ZHCOOL520 — https://github.com/ZHCOOL520/LoliPickaxe-1.20.1AI
+1.12.2 原作者：Is_GK — https://github.com/IslenautsGK/LoliPickaxe
+本移植版为原项目的衍生作品，沿用原项目 GPL-3.0 许可。'''
+description = '''氪金萝莉镐（LoliPickaxe）— Minecraft 1.20.1 Forge 移植版
+
+一把"为所欲为"的终极镐子：
+· 左键点击即秒杀目标，并可范围击杀（范围与斜率可配置）
+· 右键切换挖掘范围，潜行右键清空周围实体
+· 持有即无敌：免疫一切伤害、可自由飞行、挖掘距离可配置
+· 自带超大型分页储藏室，取消堆叠上限，掉落物自动收纳
+· 另含萝莉生物、萝莉卡片 / 卡片册 / 网络卡片、密码工作台、附魔与药水编辑等玩法
+
+移植：ZHCOOL520　原作者：Is_GK　许可：GPL-3.0'''
+logoFile = "logo.png"
+logoBlur = false
+displayURL = "https://github.com/ZHCOOL520/LoliPickaxe-1.20.1AI"
+
+[[dependencies.${mod_id}]]
+modId = "forge"
+type = "required"
+mandatory = true
+versionRange = "${forge_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+mandatory = true
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"

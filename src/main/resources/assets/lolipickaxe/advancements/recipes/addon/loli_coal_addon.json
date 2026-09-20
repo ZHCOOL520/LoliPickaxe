@@ -1,0 +1,25 @@
+{
+	"parent" : "lolipickaxe:recipes/root",
+	"rewards" : {
+		"recipes" : ["lolipickaxe:loli_coal_addon"]
+	},
+	"criteria" : {
+		"has_coal" : {
+			"trigger" : "minecraft:inventory_changed",
+			"conditions" : {
+				"items" : [{
+							"item" : "minecraft:coal"
+						}]
+			}
+		},
+		"has_coal_block" : {
+			"trigger" : "minecraft:inventory_changed",
+			"conditions" : {
+				"items" : [{
+							"item" : "minecraft:coal_block"
+						}]
+			}
+		}
+	},
+	"requirements" : [["has_coal", "has_coal_block"]]
+}
