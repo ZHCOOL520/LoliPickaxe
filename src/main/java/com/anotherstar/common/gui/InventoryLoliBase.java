@@ -315,6 +315,96 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>与直接操作 {@link #getPage(int)} 返回的列表相比，本方法的唯一区别是
+	 * <b>每一处写入都经过 {@link #setItem(int, ItemStack)} 并因此调用 {@link #setChanged()}</b>，
+	 * 从而把对应页标记为脏页、保证 {@code stopOpen} 时真正落盘。
+	 * 堆叠判定（{@code isSameItemSameTags}）、上限取值（{@code cancelStackLimit}）、
+	 * 以及「先填已有堆、再占空槽」的填充顺序都与原先的自动收纳逻辑保持一致。
+	 */
+	@Override
+	public ItemStack insertItem(ItemStack stack) {
+		if (stack.isEmpty()) {
+			return ItemStack.EMPTY;
+		}
+		// 复制一份用于计算剩余量；不改动调用方传入的物品堆
+		ItemStack remaining = stack.copy();
+		int slotCount = this.getContainerSize();
+		int maxStackSize = this.getMaxStackSize();
+		boolean unlimited = this.cancelStackLimit();
+
+		for (int page = 0; page < this.getMaxPage() && !remaining.isEmpty(); page++) {
+			NonNullList<ItemStack> stacks = this.getPage(page);
+			// 第一遍：并入同类型的已有堆
+			for (int slot = 0; slot < slotCount && !remaining.isEmpty(); slot++) {
+				ItemStack existing = stacks.get(slot);
+				if (existing.isEmpty()) {
+					continue;
+				}
+				if (!ItemStack.isSameItem(existing, remaining) || !ItemStack.isSameItemSameTags(existing, remaining)) {
+					continue;
+				}
+				int perSlotMax = unlimited ? maxStackSize : Math.min(maxStackSize, existing.getMaxStackSize());
+				int room = perSlotMax - existing.getCount();
+				if (room <= 0) {
+					continue;
+				}
+				int moved = Math.min(room, remaining.getCount());
+				if (moved <= 0) {
+					continue;
+				}
+				// 复制后写入，避免把容器内部的堆共享给调用方
+				ItemStack merged = existing.copy();
+				merged.setCount(existing.getCount() + moved);
+				this.setItemForPage(page, slot, merged);
+				remaining.shrink(moved);
+			}
+			// 第二遍：占用空槽
+			for (int slot = 0; slot < slotCount && !remaining.isEmpty(); slot++) {
+				if (!stacks.get(slot).isEmpty()) {
+					continue;
+				}
+				int perSlotMax = unlimited ? maxStackSize : Math.min(maxStackSize, remaining.getMaxStackSize());
+				int moved = Math.min(perSlotMax, remaining.getCount());
+				if (moved <= 0) {
+					continue;
+				}
+				ItemStack placed = remaining.copy();
+				placed.setCount(moved);
+				this.setItemForPage(page, slot, placed);
+				remaining.shrink(moved);
+			}
+		}
+		return remaining.isEmpty() ? ItemStack.EMPTY : remaining;
+	}
+
+	/**
+	 * 把物品写入指定页的指定槽位，并正确标记该页为脏页。
+	 *
+	 * <p>{@link #setItem(int, ItemStack)} 只能作用于<b>当前页</b>，而自动收纳需要跨页填充，
+	 * 因此这里直接按页写入；除「目标页由参数指定」外，数量收敛规则与 {@code setItem} 完全一致。
+	 *
+	 * @param page  目标页索引
+	 * @param index 页内槽位索引
+	 * @param stack 要写入的物品堆
+	 */
+	private void setItemForPage(int page, int index, ItemStack stack) {
+		NonNullList<ItemStack> stacks = this.getPage(page);
+		if (index < 0 || index >= stacks.size()) {
+			return;
+		}
+		ItemStack stored = stack;
+		if (!stored.isEmpty() && stored.getCount() > this.getMaxStackSize()) {
+			stored = stored.copy();
+			stored.setCount(this.getMaxStackSize());
+		}
+		stacks.set(index, stored);
+		// 【关键】必须标记脏页，否则 stopOpen 会用读入时的旧快照覆盖掉本次写入
+		this.markDirty(page);
+	}
+
 	@Override
 	public void clearContent() {
 		for (NonNullList<ItemStack> stacks : pages) {

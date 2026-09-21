@@ -167,29 +167,17 @@ public class DestroyBedrockEvent {
 		}
 		if (auto) {
 			for (ItemStack dropStack : drops) {
-				for (int m = 0; m < inventory.getMaxPage(); m++) {
-					NonNullList<ItemStack> stacks = inventory.getPage(m);
-					for (int n = 0; n < stacks.size(); n++) {
-						ItemStack slotStack = stacks.get(n);
-						if (slotStack.isEmpty()) {
-							stacks.set(n, dropStack.copy());
-							dropStack.setCount(0);
-							break;
-						} else {
-							int maxCount = inventory.cancelStackLimit() ? inventory.getMaxStackSize() : Math.min(inventory.getMaxStackSize(), slotStack.getMaxStackSize());
-							int count = Math.min(maxCount - slotStack.getCount(), dropStack.getCount());
-							if (count > 0 && ItemStack.isSameItem(slotStack, dropStack) && ItemStack.isSameItemSameTags(slotStack, dropStack)) {
-								slotStack.grow(count);
-								dropStack.shrink(count);
-								if (dropStack.isEmpty()) {
-									break;
-								}
-							}
-						}
-					}
-					if (dropStack.isEmpty()) {
-						break;
-					}
+				// 【关键修复】必须经由 insertItem 写入，而不是直接操作 getPage(...) 返回的列表。
+				// 直接改列表不会调用 setChanged()，该页就不会被标记为脏页；
+				// 而 stopOpen() 对未变脏的页会复用读入时的原始 NBT 快照，
+				// 于是刚收进储藏室的物品会被旧快照整份覆盖 —— 这正是玩家反馈的
+				// 「物品收进背包了但背包里看不到、实际也没有」。
+				ItemStack leftover = inventory.insertItem(dropStack);
+				// 装不下的部分留在 drops 中，稍后照常掉落到地面
+				if (leftover.isEmpty()) {
+					dropStack.setCount(0);
+				} else {
+					dropStack.setCount(leftover.getCount());
 				}
 			}
 		}

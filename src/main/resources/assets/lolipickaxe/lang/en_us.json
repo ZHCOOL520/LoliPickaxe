@@ -6,6 +6,7 @@
   "item.lolipickaxe.small_loli_pickaxe": "§c普通萝莉",
   "item.lolipickaxe.loli_dispersal": "§c萝莉退散!",
   "item.lolipickaxe.bug_entity_clear": "§c清除只在客户端存在的生物(擦屁股)",
+	"item.lolipickaxe.loli_spawn_egg": "§cLoli Spawn Egg",
   "item.lolipickaxe.loli_coal_addon": "回到过去升级",
   "item.lolipickaxe.loli_iron_addon": "采集速度升级",
   "item.lolipickaxe.loli_gold_addon": "攻击伤害升级",
@@ -194,5 +195,12 @@
   "jei.lolipickaxe.info.card": "Has a %s chance to drop when killing any mob.",
   "jei.lolipickaxe.info.card_album": "Has a %s chance to drop when killing any mob.",
   "jei.lolipickaxe.info.record": "Has a %s chance to drop when killing a Creeper.",
+  "jei.lolipickaxe.category.altar": "Loli Altar Layout",
+  "jei.lolipickaxe.altar.legend": "Cyan = altar block, gold = center (right-click this one)",
+  "jei.lolipickaxe.altar.hint": "Left: full 63x63 pattern. Right: center 9x9 zoomed in.",
+  "jei.lolipickaxe.altar.desc1": "Place altar blocks in the world following the pattern (1169 blocks),",
+  "jei.lolipickaxe.altar.desc2": "then right-click the center block with a Loli Pickaxe to summon a Loli.",
+  "jei.lolipickaxe.info.password_workbench": "Password Workbench: arrange the ingredients in the 3x3 grid AND type the correct password in the password field. The result only appears when the password matches. Passwords are preset by the modpack or server.",
+  "jei.lolipickaxe.info.altar_block": "Loli Altar Block. Build the pattern shown in JEI's 'Loli Altar Layout', then right-click the center block with a Loli Pickaxe to summon a Loli.",
   "jei.lolipickaxe.info.tnt": "Craft with TNT: 9 TNT for the Blue Screen Bomb, 5 for the Exit Bomb, 8 for the Fail Respond Bomb."
 }

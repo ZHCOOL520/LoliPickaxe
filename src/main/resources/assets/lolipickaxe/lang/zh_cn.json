@@ -6,6 +6,7 @@
   "item.lolipickaxe.small_loli_pickaxe": "§c普通萝莉",
   "item.lolipickaxe.loli_dispersal": "§c萝莉退散!",
   "item.lolipickaxe.bug_entity_clear": "§c清除只在客户端存在的生物(擦屁股)",
+	"item.lolipickaxe.loli_spawn_egg": "§c萝莉刷怪蛋",
   "item.lolipickaxe.loli_coal_addon": "回到过去升级",
   "item.lolipickaxe.loli_iron_addon": "采集速度升级",
   "item.lolipickaxe.loli_gold_addon": "攻击伤害升级",
@@ -195,5 +196,12 @@
   "jei.lolipickaxe.info.card": "击杀任意生物时有 %s 的概率掉落。",
   "jei.lolipickaxe.info.card_album": "击杀任意生物时有 %s 的概率掉落。",
   "jei.lolipickaxe.info.record": "击杀苦力怕时有 %s 的概率掉落。",
+  "jei.lolipickaxe.category.altar": "萝莉祭坛摆放方式",
+  "jei.lolipickaxe.altar.legend": "青色 = 祭坛方块，金色 = 中心（右键这一格）",
+  "jei.lolipickaxe.altar.hint": "左图为完整 63×63 图案，右图为中心 9×9 放大。",
+  "jei.lolipickaxe.altar.desc1": "在世界中按图案摆放祭坛方块（共 1169 个），",
+  "jei.lolipickaxe.altar.desc2": "然后手持萝莉镐右键中心那一格，即可召唤萝莉。",
+  "jei.lolipickaxe.info.password_workbench": "密码工作台的用法：把材料按配方摆进 3×3 网格后，还需要在界面的密码栏输入正确密码，产物才会出现。密码由整合包或服务器预设，输错则永远合不出东西。",
+  "jei.lolipickaxe.info.altar_block": "萝莉祭坛方块。按 JEI 中的「萝莉祭坛摆放方式」图案摆放后，用萝莉镐右键中心格召唤萝莉。",
   "jei.lolipickaxe.info.tnt": "用 TNT 在工作台合成：9 个 TNT 得蓝屏炸弹，5 个得蹦溃炸弹，8 个得未响应炸弹。"
 }

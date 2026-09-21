@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.anotherstar.common.config.ConfigLoader;
+import com.anotherstar.common.config.annotation.ConfigField;
 import com.anotherstar.common.config.annotation.ConfigField.ValurType;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
@@ -56,7 +57,15 @@ public class ConfigCommand {
 		try {
 			switch (ConfigLoader.flagAnnotations.get(flag).valueType()) {
 			case INT:
-				ConfigLoader.flagFields.get(flag).setInt(null, Integer.parseInt(value));
+				// 【修复】此处原为直接 setInt(null, 解析值)，完全没有做上下界钳位，
+				// 于是 /loli 可以把任意 INT 配置改成任意整数。几个已被证实的后果：
+				//   loliPickaxeMaxPage = 20亿  → InventoryLoliBase#getPage 按需分配页，
+				//                                 会尝试分配约 20 亿个 NonNullList 而 OOM 掉服务端；
+				//   loliPickaxeSlotStackLimit 过高 → 堆叠数相加溢出为负数，物品数量错乱。
+				// 这里统一按注解声明的 intMinValue/intMaxValue 钳位，
+				// 未声明上界（intMaxValue == 0 且无 intMaxValueField）时沿用原值不变，
+				// 以保证不影响既有配置项的既有行为。
+				ConfigLoader.flagFields.get(flag).setInt(null, clampIntFlag(flag, Integer.parseInt(value)));
 				break;
 			case DOUBLE:
 				ConfigLoader.flagFields.get(flag).setDouble(null, Double.parseDouble(value));
@@ -82,6 +91,40 @@ public class ConfigCommand {
 		MutableComponent valueText = Component.literal(value).withStyle(ChatFormatting.RED);
 		source.sendSuccess(() -> Component.translatable("commands.loli.set", flagText, commentText, valueText), false);
 		return 1;
+	}
+
+	/**
+	 * 按 {@code @ConfigField} 声明的上下界钳位一个 INT 配置值。
+	 *
+	 * <p>语义与 {@code ConfigLoader} 中「每把镐独立配置」路径的钳位保持一致：
+	 * <ul>
+	 *   <li>若字段通过 {@code intMaxValueField} 指向另一个 INT 字段，则用那个字段的<b>当前运行值</b>作上界
+	 *       （例如「击杀范围」以「最大击杀范围」为上界）；</li>
+	 *   <li>否则用注解的 {@code intMaxValue}；该值默认为 0，表示<b>未声明上界</b>，
+	 *       此时不施加任何上界，以免把既有行为改成「一律被夹到 0」；</li>
+	 *   <li>下界同理，默认 {@code intMinValue} 为 0。</li>
+	 * </ul>
+	 *
+	 * @param flag  配置项名（须已存在于 {@code commandFlags}）
+	 * @param value 玩家通过命令传入的原始值
+	 * @return 钳位后的值
+	 */
+	private static int clampIntFlag(String flag, int value) {
+		ConfigField annotation = ConfigLoader.flagAnnotations.get(flag);
+		int min = annotation.intMinValue();
+		int max = annotation.intMaxValue();
+		// 未声明上界时保持原样（不钳位），避免把「无上界」误当成「上界为 0」
+		if (max <= 0 && annotation.intMaxValueField().isEmpty()) {
+			max = Integer.MAX_VALUE;
+		}
+		// 未声明下界时同样不施加下界（intMinValue 默认 0，但那是随注解默认值来的，
+		// 对 loliModelType 这类可能取负值的字段不应强行夹到 0）；
+		// 只有显式声明了 intMinValue 或 intMinValueField 的字段才钳下界。
+		int lower = Integer.MIN_VALUE;
+		if (annotation.intMinValue() != 0 || !annotation.intMinValueField().isEmpty()) {
+			lower = min;
+		}
+		return Mth.clamp(value, lower, max);
 	}
 
 	private static int sendFlag(CommandSourceStack source, String flag) {

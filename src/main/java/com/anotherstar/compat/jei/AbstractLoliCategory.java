@@ -32,9 +32,9 @@ public abstract class AbstractLoliCategory<T> implements IRecipeCategory<T> {
 	/** 图面内边距。 */
 	protected static final int PAD = 4;
 	/** JEI 内置配方箭头的尺寸（22×16），用于给箭头预留水平空间。 */
-	private static final int ARROW_W = 22;
+	protected static final int ARROW_W = 22;
 	/** JEI 内置配方箭头的高度。 */
-	private static final int ARROW_H = 16;
+	protected static final int ARROW_H = 16;
 
 	/** 输入网格左上角 X。 */
 	private static final int INPUT_X = PAD;
@@ -44,6 +44,11 @@ public abstract class AbstractLoliCategory<T> implements IRecipeCategory<T> {
 	private static final int ARROW_X = INPUT_X + INPUT_W + PAD;
 	/** 输出槽 X：紧接箭头右侧，间隔一个内边距。 */
 	private static final int OUTPUT_X = ARROW_X + ARROW_W + PAD;
+
+	/** 单输入布局的来源槽 X（就是左内边距）。 */
+	private static final int SINGLE_INPUT_X = PAD;
+	/** 单输入布局中，给底部概率文字预留的高度（约一行 9px 字 + 余量）。 */
+	private static final int SINGLE_TEXT_H = 14;
 
 	/**
 	 * 图面宽度 = 输出槽右边缘 + 右侧内边距。
@@ -148,6 +153,93 @@ public abstract class AbstractLoliCategory<T> implements IRecipeCategory<T> {
 		}
 		// 输出槽：位于箭头右侧、竖直居中，与输入网格无任何重叠
 		builder.addOutputSlot(OUTPUT_X, (HEIGHT - SLOT) / 2).addItemStack(output);
+	}
+
+	/**
+	 * 「单输入」紧凑布局：一个来源槽 → 箭头 → 一个产物槽。
+	 *
+	 * <h2>为什么需要单独一个方法</h2>
+	 *
+	 * <p>{@link #layout} 的几何常量是按<b>3 列工作台</b>固定的
+	 * （{@code INPUT_W = 3 × 18 = 54}、{@code ARROW_X = 62}、{@code OUTPUT_X = 88}）。
+	 * 但「生物掉落」这类条目<b>只有 1 个来源</b>，套用后会变成
+	 * 「左侧孤零零一格 → 中间空出 40px（约 2 格）→ 右侧产物」，
+	 * 视觉上就是玩家反馈的「掉落界面错位」。
+	 *
+	 * <p>本方法不复用那套常量，而是<b>紧贴排布</b>：
+	 * <pre>
+	 * | 来源槽 | 间隔 | 箭头 | 间隔 | 产物槽 | 内边距 |
+	 * </pre>
+	 * 由于此布局比 {@code WIDTH} 窄，调用方需要同时重写
+	 * {@link #getWidth()} 与 {@link #getHeight()}，否则背景与内容会不匹配。
+	 *
+	 * @param builder JEI 布局构造器；不可为 null
+	 * @param source  来源槽内容；不可为 null
+	 * @param output  产物槽内容；不可为 null
+	 */
+	protected void layoutSingle(IRecipeLayoutBuilder builder, ItemStack source, ItemStack output) {
+		builder.addInputSlot(SINGLE_INPUT_X, singleSlotY()).addItemStack(source);
+		builder.addOutputSlot(singleOutputX(), singleSlotY()).addItemStack(output);
+	}
+
+	/**
+	 * 单输入布局下的箭头 X 坐标。
+	 *
+	 * @return 紧接来源槽右侧、间隔一个内边距
+	 */
+	protected static int singleArrowX() {
+		return SINGLE_INPUT_X + SLOT + PAD;
+	}
+
+	/**
+	 * 单输入布局下的产物槽 X 坐标。
+	 *
+	 * @return 紧接箭头右侧、间隔一个内边距
+	 */
+	protected static int singleOutputX() {
+		return singleArrowX() + ARROW_W + PAD;
+	}
+
+	/**
+	 * 单输入布局的图面宽度。
+	 *
+	 * @return 产物槽右边缘 + 右侧内边距
+	 */
+	protected static int singleWidth() {
+		return singleOutputX() + SLOT + PAD;
+	}
+
+	/**
+	 * 单输入布局的图面高度。
+	 *
+	 * <p>比 3 行的 {@code HEIGHT} 矮，只留「一行槽位 + 上下内边距 + 一行概率文字」的空间。
+	 *
+	 * @return 图面高度
+	 */
+	protected static int singleHeight() {
+		return SLOT + 2 * PAD + SINGLE_TEXT_H;
+	}
+
+	/**
+	 * 单输入布局中槽位的 Y 坐标（在文字上方的剩余空间里居中）。
+	 *
+	 * @return 槽位 Y
+	 */
+	protected static int singleSlotY() {
+		return PAD;
+	}
+
+	/**
+	 * 单输入布局中概率文字的 Y 坐标。
+	 *
+	 * <p>此前该文字用的是 {@code getHeight() - 14} 这种硬编码，
+	 * 在 3 行高的图面上会与产物槽底部只隔 8px、几乎贴在一起。
+	 * 这里改为「槽位底部 + 内边距」推导，与槽位保持稳定间距。
+	 *
+	 * @return 概率文字 Y
+	 */
+	protected static int singleTextY() {
+		return singleSlotY() + SLOT + 1;
 	}
 
 }

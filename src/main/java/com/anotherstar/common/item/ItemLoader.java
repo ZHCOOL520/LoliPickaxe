@@ -5,11 +5,13 @@ import java.util.function.Supplier;
 
 import com.anotherstar.common.LoliPickaxe;
 import com.anotherstar.common.config.ConfigLoader;
+import com.anotherstar.common.entity.EntityLoader;
 import com.anotherstar.common.item.tool.ItemLoliPickaxe;
 import com.anotherstar.common.item.tool.ItemSmallLoliPickaxe;
 import com.google.common.collect.Lists;
 
 import net.minecraft.world.item.Item;
+import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -244,6 +246,27 @@ public class ItemLoader {
 		return bugEntityClearInstance;
 	}
 
+	private static ForgeSpawnEggItem loliSpawnEggInstance;
+
+	/**
+	 * 萝莉刷怪蛋（注册名 {@code loli_spawn_egg}）。
+	 *
+	 * <p>对应 1.12.2 的 {@code EntityRegistry.registerEgg(lolipickaxe:loli, 0xFFFFFF, 0x000000)}。
+	 * 该调用在移植到 1.20.1 时被遗漏，导致萝莉实体没有任何合法的生成方式。
+	 * 颜色值与 1.12.2 完全一致：主色 {@code 0xFFFFFF}、副色 {@code 0x000000}。
+	 *
+	 * <p>注意：1.12.2 只给 {@code loli} 注册了刷怪蛋，{@code loli_buff_attack_tnt} 是 TNT 实体、
+	 * 从来没有刷怪蛋，因此这里也不为它添加。
+	 *
+	 * @return 萝莉刷怪蛋物品（全局单例）
+	 */
+	public static ForgeSpawnEggItem loliSpawnEgg() {
+		if (loliSpawnEggInstance == null) {
+			loliSpawnEggInstance = new ForgeSpawnEggItem(EntityLoader::LOLI_TYPE, 0xFFFFFF, 0x000000, new Item.Properties());
+		}
+		return loliSpawnEggInstance;
+	}
+
 	private static ItemLoliCard loliCardInstance;
 
 	/** @return 单张立绘卡片（注册名 {@code loli_card}） */
@@ -348,6 +371,8 @@ public class ItemLoader {
 		registerMaterial("loli_entity_soul_addon", ItemLoader::entitySoul);
 		ITEMS.register("loli_dispersal", ItemLoader::loliDispersal);
 		ITEMS.register("bug_entity_clear", ItemLoader::bugEntityClear);
+		// 萝莉刷怪蛋：1.12.2 用 EntityRegistry.registerEgg 注册，移植时遗漏，此处补回。
+		ITEMS.register("loli_spawn_egg", ItemLoader::loliSpawnEgg);
 		ITEMS.register("loli_card", ItemLoader::loliCard);
 		ITEMS.register("loli_card_album", ItemLoader::loliCardAlbum);
 		ITEMS.register("loli_card_online", ItemLoader::loliCardOnline);

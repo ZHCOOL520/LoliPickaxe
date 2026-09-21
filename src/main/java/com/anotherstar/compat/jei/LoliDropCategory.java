@@ -1,6 +1,5 @@
 package com.anotherstar.compat.jei;
 
-import java.util.List;
 import java.util.Locale;
 
 import net.minecraft.network.chat.Component;
@@ -42,15 +41,32 @@ public class LoliDropCategory extends AbstractLoliCategory<LoliJeiRecipes.Drop> 
 
 	@Override
 	public void setRecipe(IRecipeLayoutBuilder builder, LoliJeiRecipes.Drop recipe, IFocusGroup focuses) {
-		// 左侧放「来源」示意（剑/苦力怕刷怪蛋），右侧放掉落物
-		layout(builder, List.of(recipe.source()), recipe.result());
+		// 【修正错位】这里必须用「单输入紧凑布局」而不是通用的 layout(...)。
+		// 通用 layout 的几何常量是按 3 列工作台固定的（输出槽 X=88），
+		// 而本类别只有 1 个来源，套用后来源与产物之间会空出约 40px（2 格），
+		// 即玩家反馈的「掉落界面错位」。layoutSingle 让三者紧贴排布。
+		layoutSingle(builder, recipe.source(), recipe.result());
 	}
 
 	@Override
 	public void createRecipeExtras(IRecipeExtrasBuilder builder, LoliJeiRecipes.Drop recipe, IFocusGroup focuses) {
-		super.createRecipeExtras(builder, recipe, focuses);
-		// 在槽位下方显示掉落概率，让玩家一眼看出稀有度
-		builder.addText(Component.translatable("jei.lolipickaxe.probability", formatPercent(recipe.probability())), PAD, getHeight() - 14);
+		// 箭头紧贴来源槽右侧，与 layoutSingle 的槽位保持同一行、竖直居中
+		builder.addRecipeArrow().setPosition(singleArrowX(), singleSlotY() + (SLOT - 16) / 2);
+		// 概率文字放在槽位下方，用推导出的 Y 而不是硬编码的 getHeight()-14
+		builder.addText(Component.translatable("jei.lolipickaxe.probability", formatPercent(recipe.probability())),
+				PAD, singleTextY());
+	}
+
+	/** 单输入紧凑布局下的图面宽度（比通用类别窄）。 */
+	@Override
+	public int getWidth() {
+		return singleWidth();
+	}
+
+	/** 单输入紧凑布局下的图面高度（比通用类别矮）。 */
+	@Override
+	public int getHeight() {
+		return singleHeight();
 	}
 
 	/**

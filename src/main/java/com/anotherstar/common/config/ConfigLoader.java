@@ -104,13 +104,13 @@ public class ConfigLoader {
 	public static double loliPickaxeBlockReachDistance;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "最大挖掘距离", valueType = ValurType.DOUBLE, doubleDefaultValue = 20.0)
 	public static double loliPickaxeBlockReachMaxDistance;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "储藏室最大页数", valueType = ValurType.INT, intDefaultValue = 100)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "储藏室最大页数", valueType = ValurType.INT, intDefaultValue = 100, intMinValue = 1, intMaxValue = 10000)
 	public static int loliPickaxeMaxPage;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "储藏室取消物品堆叠限制", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeCancelStackLimit;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "储藏室最大堆叠数", valueType = ValurType.INT, intDefaultValue = 2000000000)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "储藏室最大堆叠数", valueType = ValurType.INT, intDefaultValue = 2000000000, intMinValue = 1, intMaxValue = 2000000000)
 	public static int loliPickaxeSlotStackLimit;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "自动收纳进储藏室", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "自动收纳进储藏室", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
 	public static boolean loliPickaxeAutoAccept;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "反伤", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeThorns;
@@ -164,6 +164,10 @@ public class ConfigLoader {
 	public static boolean loliPickaxeExitAttack;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "未响应打击", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeFailRespondAttack;
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "蓝屏打击进度动画时长(毫秒)", valueType = ValurType.INT, intDefaultValue = 6000, intMinValue = 0, intMaxValue = 60000)
+	public static int loliBlueScreenDuration;
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "未响应打击卡死时长(毫秒)", valueType = ValurType.INT, intDefaultValue = 15000, intMinValue = 0, intMaxValue = 120000)
+	public static int loliFailRespondDuration;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "强制死亡延迟特化列表(实体ID:Tick)", valueType = ValurType.MAP, mapDefaultValue = { "ender_dragon:::201" }, mapKeyType = ValurType.STRING, mapValueType = ValurType.INT)
 	public static Map<String, Integer> loliPickaxeDelayRemoveList = Maps.newHashMap();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "左键范围攻击", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)

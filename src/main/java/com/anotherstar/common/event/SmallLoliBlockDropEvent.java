@@ -126,32 +126,18 @@ public class SmallLoliBlockDropEvent {
 		}
 		if (ItemSmallLoliPickaxe.inventory != null) {
 			for (ItemStack drop : drops) {
-				if (level.random.nextFloat() <= chance) {
-					for (int i = 0; i < ItemSmallLoliPickaxe.inventory.getMaxPage(); i++) {
-						NonNullList<ItemStack> stacks = ItemSmallLoliPickaxe.inventory.getPage(i);
-						for (int j = 0; j < stacks.size(); j++) {
-							ItemStack slotStack = stacks.get(j);
-							if (slotStack.isEmpty()) {
-								stacks.set(j, drop.copy());
-								drop.setCount(0);
-								break;
-							} else {
-								int maxCount = ItemSmallLoliPickaxe.inventory.cancelStackLimit() ? ItemSmallLoliPickaxe.inventory.getMaxStackSize() : Math.min(ItemSmallLoliPickaxe.inventory.getMaxStackSize(), slotStack.getMaxStackSize());
-								int count = Math.min(maxCount - slotStack.getCount(), drop.getCount());
-								if (count > 0 && ItemStack.isSameItem(slotStack, drop) && ItemStack.isSameItemSameTags(slotStack, drop)) {
-									slotStack.grow(count);
-									drop.shrink(count);
-									if (drop.isEmpty()) {
-										break;
-									}
-								}
-							}
-						}
-						if (drop.isEmpty()) {
-							break;
-						}
-					}
+				if (level.random.nextFloat() > chance) {
+					continue;
 				}
+				// 【关键修复】必须经由 insertItem 写入，而不能直接操作 getPage(...) 返回的列表。
+				// getPage 返回的是容器内部的 NonNullList，直接 set/grow 虽然能改到内存，
+				// 却不会调用 setChanged()，于是该页不会被视为脏页；stopOpen 时对未变脏的页
+				// 会复用 readOpen 阶段读入的原始 NBT 快照，把刚收进来的物品整份覆盖掉，
+				// 表现为「收进去了，但打开储藏室根本看不到」。
+				// insertItem 内部每一处写入都走 setItemForPage → markDirty，因此能正确落盘。
+				ItemStack leftover = ItemSmallLoliPickaxe.inventory.insertItem(drop);
+				// 装不下的部分留在 drops 中，照常掉落到地面
+				drop.setCount(leftover.isEmpty() ? 0 : leftover.getCount());
 			}
 			drops.removeIf(ItemStack::isEmpty);
 		}

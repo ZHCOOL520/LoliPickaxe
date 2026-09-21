@@ -1,6 +1,7 @@
 package com.anotherstar.client.creative;
 
 import com.anotherstar.common.LoliPickaxe;
+import com.anotherstar.common.block.BlockLoader;
 import com.anotherstar.common.item.ItemLoader;
 import com.anotherstar.common.item.ItemLoliPickaxeMaterial;
 import com.anotherstar.common.item.ItemLoliRecord;
@@ -72,6 +73,16 @@ public class CreativeTabLoader {
 		for (ItemLoliRecord record : ItemLoader.loliRecords) {
 			output.accept(new ItemStack(record));
 		}
+		// 萝莉刷怪蛋：对应 1.12.2 的 EntityRegistry.registerEgg。
+		// 移植时遗漏了这一步，导致萝莉实体完全没有生成方式。放在唱片之后，保持既有顺序不变。
+		output.accept(new ItemStack(ItemLoader.loliSpawnEgg()));
+		// 方块物品：三色 TNT 此前不在任何物品栏，玩家只能靠记配方合成才能拿到。
+		// 现统一移入本物品栏，位置排在工具与卡片之后。
+		output.accept(new ItemStack(BlockLoader.itemLoliBlueScreenTNT()));
+		output.accept(new ItemStack(BlockLoader.itemLoliExitTNT()));
+		output.accept(new ItemStack(BlockLoader.itemLoliFailRespondTNT()));
+		output.accept(new ItemStack(BlockLoader.itemLoliAltar()));
+		output.accept(new ItemStack(BlockLoader.itemPasswordWorkBench()));
 	}
 
 	private static void fillLoliRecipeTabs(CreativeModeTab.Output output) {

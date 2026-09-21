@@ -45,4 +45,17 @@ public final class LoliJeiRecipes {
 	public record Drop(ItemStack source, ItemStack result, double probability) {
 	}
 
+	/**
+	 * 「萝莉祭坛摆放方式」展示条目。
+	 *
+	 * <p>祭坛不是合成出来的，而是要求在世界上按特定图案摆放 63×63 的祭坛方块，
+	 * 再用萝莉镐右键中心的方块。这个条目本身<b>不携带数据</b>，
+	 * 图案由 {@link LoliAltarPattern} 提供、由 {@link LoliAltarCategory} 绘制。
+	 *
+	 * <p>之所以做成"配方条目"而不是信息页，是因为这样玩家可以在 JEI 里
+	 * <b>直接搜索祭坛方块并跳到摆法</b>，比藏在物品说明里更好找。
+	 */
+	public record AltarLayout() {
+	}
+
 }

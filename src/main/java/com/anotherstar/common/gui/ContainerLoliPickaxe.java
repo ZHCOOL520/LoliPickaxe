@@ -406,7 +406,12 @@ public class ContainerLoliPickaxe extends AbstractContainerMenu {
 
 	/** 标记 81 个储藏室槽位为已变更，促使客户端用新页的数据重绘（{@code Slot#setChanged} 会触发容器同步）。 */
 	private void updateSlot() {
-		for (int i = 0; i < inventory.getContainerSize(); i++) {
+		// 上界取「容器声明的槽位数」与「实际已添加的槽位数」的较小者：
+		// 构造失败（物品不含容器 → inventory 为 null）或槽位添加异常时，
+		// slots 可能比 getContainerSize() 短，直接 get(i) 会抛 IndexOutOfBoundsException。
+		// broadcastChanges() 中已采用同样的多重取小防护，此处保持一致。
+		int size = Math.min(inventory.getContainerSize(), this.slots.size());
+		for (int i = 0; i < size; i++) {
 			this.slots.get(i).setChanged();
 		}
 	}

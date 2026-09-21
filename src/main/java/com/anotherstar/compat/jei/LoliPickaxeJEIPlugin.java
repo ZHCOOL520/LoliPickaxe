@@ -62,6 +62,8 @@ public class LoliPickaxeJEIPlugin implements IModPlugin {
 	public static final RecipeType<LoliJeiRecipes.Display> SUPERPOSITION_TYPE = RecipeType.create(LoliPickaxe.MODID, "superposition", LoliJeiRecipes.Display.class);
 	public static final RecipeType<LoliJeiRecipes.Display> SPLIT_TYPE = RecipeType.create(LoliPickaxe.MODID, "split", LoliJeiRecipes.Display.class);
 	public static final RecipeType<LoliJeiRecipes.Drop> MOB_DROP_TYPE = RecipeType.create(LoliPickaxe.MODID, "mob_drop", LoliJeiRecipes.Drop.class);
+	/** 「萝莉祭坛摆放方式」类别：展示 63×63 的建造图案。 */
+	public static final RecipeType<LoliJeiRecipes.AltarLayout> ALTAR_TYPE = RecipeType.create(LoliPickaxe.MODID, "altar", LoliJeiRecipes.AltarLayout.class);
 
 	@Override
 	public ResourceLocation getPluginUid() {
@@ -71,7 +73,7 @@ public class LoliPickaxeJEIPlugin implements IModPlugin {
 	@Override
 	public void registerCategories(IRecipeCategoryRegistration registration) {
 		IGuiHelper helper = registration.getJeiHelpers().getGuiHelper();
-		registration.addRecipeCategories(new LoliPickaxeCategory(helper, LOLI_PICKAXE_TYPE), new SmallLoliPickaxeCategory(helper, SMALL_LOLI_PICKAXE_TYPE), new SuperpositionCategory(helper, SUPERPOSITION_TYPE), new LoliSplitCategory(helper, SPLIT_TYPE), new LoliDropCategory(helper, MOB_DROP_TYPE));
+		registration.addRecipeCategories(new LoliPickaxeCategory(helper, LOLI_PICKAXE_TYPE), new SmallLoliPickaxeCategory(helper, SMALL_LOLI_PICKAXE_TYPE), new SuperpositionCategory(helper, SUPERPOSITION_TYPE), new LoliSplitCategory(helper, SPLIT_TYPE), new LoliDropCategory(helper, MOB_DROP_TYPE), new LoliAltarCategory(helper, ALTAR_TYPE));
 	}
 
 	@Override
@@ -81,6 +83,8 @@ public class LoliPickaxeJEIPlugin implements IModPlugin {
 		registration.addRecipes(SUPERPOSITION_TYPE, buildSuperpositionRecipes());
 		registration.addRecipes(SPLIT_TYPE, buildSplitRecipes());
 		registration.addRecipes(MOB_DROP_TYPE, buildDropRecipes());
+		// 祭坛摆法：固定一条，图案由 LoliAltarPattern 提供
+		registration.addRecipes(ALTAR_TYPE, Lists.newArrayList(new LoliJeiRecipes.AltarLayout()));
 		// 「基本物品怎么获取」的说明页：这些物品不是合成的，而是概率掉落，
 		// 光靠配方列表玩家看不到来源，因此逐项补信息页。
 		addInfoPages(registration);
@@ -96,6 +100,8 @@ public class LoliPickaxeJEIPlugin implements IModPlugin {
 		registration.addRecipeCatalyst(craftingTable, SPLIT_TYPE);
 		// 小萝莉镐本身也可作为入口，方便玩家从物品跳转到升级配方
 		registration.addRecipeCatalyst(new ItemStack(ItemLoader.smallLoliPickaxe()), SMALL_LOLI_PICKAXE_TYPE);
+		// 祭坛方块作为入口：点击祭坛方块即可查看怎么摆
+		registration.addRecipeCatalyst(new ItemStack(BlockLoader.itemLoliAltar()), ALTAR_TYPE);
 	}
 
 	/**
@@ -256,6 +262,10 @@ public class LoliPickaxeJEIPlugin implements IModPlugin {
 		}
 		// 三色炸弹：说明可用 TNT 在工作台合成，避免玩家以为它们无处可得
 		registration.addItemStackInfo(Lists.newArrayList(new ItemStack(BlockLoader.itemLoliBlueScreenTNT()), new ItemStack(BlockLoader.itemLoliExitTNT()), new ItemStack(BlockLoader.itemLoliFailRespondTNT())), Component.translatable("jei.lolipickaxe.info.tnt"));
+		// 密码工作台：说明"除了摆材料还要输密码"，否则玩家会以为它坏了
+		registration.addItemStackInfo(new ItemStack(BlockLoader.itemPasswordWorkBench()), Component.translatable("jei.lolipickaxe.info.password_workbench"));
+		// 祭坛方块：指向 JEI 中的「萝莉祭坛摆放方式」类别
+		registration.addItemStackInfo(new ItemStack(BlockLoader.itemLoliAltar()), Component.translatable("jei.lolipickaxe.info.altar_block"));
 	}
 
 	/**
