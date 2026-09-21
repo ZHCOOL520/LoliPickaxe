@@ -84,7 +84,7 @@ public class ContainerPasswordWorkbench extends AbstractContainerMenu {
 
 	@Override
 	public boolean stillValid(Player playerIn) {
-		if (world.getBlockState(pos).getBlock() != BlockLoader.passwordWorkBench) {
+		if (world.getBlockState(pos).getBlock() != BlockLoader.passwordWorkBench()) {
 			return false;
 		} else {
 			return playerIn.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;

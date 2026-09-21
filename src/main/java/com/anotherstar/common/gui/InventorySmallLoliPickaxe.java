@@ -25,7 +25,7 @@ public class InventorySmallLoliPickaxe extends InventoryLoliBase {
 
 	@Override
 	public int getMaxPage() {
-		return ItemLoader.smallLoliPickaxe.getMaxPage(stack);
+		return ItemLoader.smallLoliPickaxe().getMaxPage(stack);
 	}
 
 	@Override

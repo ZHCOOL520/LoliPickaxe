@@ -52,7 +52,7 @@ public class LoliEnchantmentPacket {
 					}
 					int lvl = element.getShort("lvl");
 					ResourceLocation name = ForgeRegistries.ENCHANTMENTS.getKey(enchantment);
-					Integer limit = name == null ? null : ConfigLoader.loliPickaxeEnchantmentLimit.get(name.toString());
+					Integer limit = name == null || ConfigLoader.loliPickaxeEnchantmentLimit == null ? null : ConfigLoader.loliPickaxeEnchantmentLimit.get(name.toString());
 					if (limit != null) {
 						if (lvl > limit) {
 							element.putShort("lvl", (short) (int) limit);
@@ -76,7 +76,25 @@ public class LoliEnchantmentPacket {
 			// 因此不再兼容数字 id，只支持 "id" 为资源路径字符串的写法。
 			return null;
 		}
-		return ForgeRegistries.ENCHANTMENTS.getValue(new ResourceLocation(name));
+		return ForgeRegistries.ENCHANTMENTS.getValue(parseId(name));
+	}
+
+	/**
+	 * 安全解析资源路径。
+	 *
+	 * <p>{@code "id"} 来自客户端提交的 NBT，构造 {@link ResourceLocation} 时遇到非法字符
+	 * （例如含空格、大写或缺省命名空间格式错误）会抛 {@code ResourceLocationException}，
+	 * 使包处理线程崩溃。这里统一捕获并返回 {@code null}，由调用方按「未知附魔」处理。
+	 *
+	 * @param name 资源路径字符串
+	 * @return 解析成功时的 ResourceLocation，非法时为 null
+	 */
+	private static ResourceLocation parseId(String name) {
+		try {
+			return new ResourceLocation(name);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 }

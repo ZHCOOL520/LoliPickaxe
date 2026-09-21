@@ -105,7 +105,14 @@ public class ContainerBlaceListLoliPickaxe extends AbstractContainerMenu {
 						CompoundTag black = blackList.getCompound(i);
 						if (black.contains("Slot") && black.contains("Name") && black.contains("Damage")) {
 							// ForgeRegistries.ITEMS#getValue 未命中时返回 null（而非空气），未注册的物品名直接跳过。
-							Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(black.getString("Name")));
+							// 物品名来自存档/数据包，构造 ResourceLocation 遇非法字符会抛异常，
+							// 这里捕获后跳过该条目，避免一个坏条目导致整个界面打不开。
+							Item item;
+							try {
+								item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(black.getString("Name")));
+							} catch (Exception e) {
+								continue;
+							}
 							if (item == null) {
 								continue;
 							}
@@ -113,7 +120,11 @@ public class ContainerBlaceListLoliPickaxe extends AbstractContainerMenu {
 							if (item != Items.AIR) {
 								blackStack.setDamageValue(black.getInt("Damage"));
 							}
-							items.setStackInSlot(black.getInt("Slot"), blackStack);
+							// 槽位索引同样来自存档，越界会抛异常，这里做范围校验
+							int slot = black.getInt("Slot");
+							if (slot >= 0 && slot < items.getSlots()) {
+								items.setStackInSlot(slot, blackStack);
+							}
 						}
 					}
 				}
@@ -135,10 +146,15 @@ public class ContainerBlaceListLoliPickaxe extends AbstractContainerMenu {
 		if (stack.isEmpty()) {
 			return false;
 		}
+		// 【必须校验物品本体】原实现只比较「当前选中的快捷栏索引」（slotIndex == selected），
+		// 完全没有校验那格里的物品是否还是当初打开界面的那把萝莉镐。
+		// 后果：玩家打开黑名单界面后切到别的快捷栏格子（放着别的物品），界面仍被视为「有效」，
+		// 关闭时会把 81 条黑名单写回 this.stack —— 若该物品已被移走/替换，就造成写入错位。
+		// 这里改为与 ContainerLoliPickaxe.stillValid 一致的身份比对，语义更严格且更正确。
 		if (slotIndex == -1) {
-			return true;
+			return stack == playerIn.getOffhandItem();
 		}
-		return slotIndex == playerIn.getInventory().selected;
+		return slotIndex == playerIn.getInventory().selected && stack == playerIn.getMainHandItem();
 	}
 
 	@Override
@@ -146,10 +162,21 @@ public class ContainerBlaceListLoliPickaxe extends AbstractContainerMenu {
 		if (slotIndex >= 0 && slotId == 108 + slotIndex) {
 			return;
 		} else if (slotId >= 0 && slotId < items.getSlots()) {
+			// 黑名单槽位只接受「单件标记」语义：
+			//  - 光标有物品 → 把该物品（数量 1）登记为黑名单项；
+			//  - 光标为空   → 清空该槽位（原实现不处理这种情况，
+			//                 导致黑名单只能新增、永远无法删除）。
+			// 其余点击类型（拖拽/数字键交换等）在此槽位无意义，保持忽略，
+			// 以免把整堆物品灌进黑名单存储。
 			if (clickTypeIn == ClickType.PICKUP) {
-				ItemStack stack = getCarried().copy();
-				stack.setCount(1);
-				items.setStackInSlot(slotId, stack);
+				ItemStack carried = getCarried();
+				if (carried.isEmpty()) {
+					items.setStackInSlot(slotId, ItemStack.EMPTY);
+				} else {
+					ItemStack marked = carried.copy();
+					marked.setCount(1);
+					items.setStackInSlot(slotId, marked);
+				}
 			}
 			return;
 		}

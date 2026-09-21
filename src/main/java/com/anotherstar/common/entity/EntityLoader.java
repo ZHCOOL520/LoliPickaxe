@@ -30,19 +30,39 @@ public class EntityLoader {
 	/** 实体类型延迟注册器，注册目标为 {@code ForgeRegistries.ENTITY_TYPES}，命名空间 {@code lolipickaxe}。 */
 	public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, LoliPickaxe.MODID);
 
+	/*
+	 * 【关键修复】EntityType 的构造器内部同样会执行
+	 *   BuiltInRegistries.ENTITY_TYPE.createIntrusiveHolder(this)
+	 * 该调用要求注册表尚未冻结。原实现把 EntityType 写成静态字段直接 build()，
+	 * 会在类初始化（<clinit>）时立即构造，从而抛出 "Registry is already frozen" 导致模组加载失败。
+	 * 因此这里改为「私有实例槽 + 公开懒加载方法」，由 DeferredRegister 的供应器在合法窗口内触发构造。
+	 * 注册名与实体 id 完全不变。
+	 */
+
+	private static EntityType<EntityLoli> loliTypeInstance;
+
 	/**
 	 * 萝莉实体类型，注册名 {@code lolipickaxe:loli}（对应原 1.12.2 的实体 id {@code lolipickaxe:loli}，网络 id 219）。
 	 * <p>
 	 * {@code MobCategory.CREATURE} 表示归类为被动生物（影响生成上限/刷怪分类）；
 	 * 碰撞箱 0.6F(宽) x 1.5F(高) 与原 1.12.2 的 {@code setSize(0.6F, 1.5F)} 一致；
 	 * 客户端追踪范围 80 格、每 3 tick 同步一次，对应原版的 {@code tracker(80, 3, false)}。
+	 *
+	 * @return 萝莉实体类型（全局单例）
 	 */
-	public static final EntityType<EntityLoli> LOLI_TYPE = EntityType.Builder
-			.<EntityLoli>of((type, level) -> new EntityLoli(type, level), MobCategory.CREATURE)
-			.sized(0.6F, 1.5F)
-			.clientTrackingRange(80)
-			.updateInterval(3)
-			.build(LoliPickaxe.MODID + ":loli");
+	public static EntityType<EntityLoli> LOLI_TYPE() {
+		if (loliTypeInstance == null) {
+			loliTypeInstance = EntityType.Builder
+					.<EntityLoli>of((type, level) -> new EntityLoli(type, level), MobCategory.CREATURE)
+					.sized(0.6F, 1.5F)
+					.clientTrackingRange(80)
+					.updateInterval(3)
+					.build(LoliPickaxe.MODID + ":loli");
+		}
+		return loliTypeInstance;
+	}
+
+	private static EntityType<EntityLoliBuffAttackTNT> loliBuffAttackTntTypeInstance;
 
 	/**
 	 * 萝莉增益攻击 TNT 实体类型，注册名 {@code lolipickaxe:loli_buff_attack_tnt}
@@ -50,18 +70,26 @@ public class EntityLoader {
 	 * <p>
 	 * {@code MobCategory.MISC} 表示杂项实体（不参与生物生成上限计算）；
 	 * 碰撞箱 0.98F x 0.98F 与原版 TNT 一致；追踪范围 80 格、每 3 tick 同步一次。
+	 *
+	 * @return 萝莉增益攻击 TNT 实体类型（全局单例）
 	 */
-	public static final EntityType<EntityLoliBuffAttackTNT> LOLI_BUFF_ATTACK_TNT_TYPE = EntityType.Builder
-			.<EntityLoliBuffAttackTNT>of((type, level) -> new EntityLoliBuffAttackTNT(level), MobCategory.MISC)
-			.sized(0.98F, 0.98F)
-			.clientTrackingRange(80)
-			.updateInterval(3)
-			.build(LoliPickaxe.MODID + ":loli_buff_attack_tnt");
+	public static EntityType<EntityLoliBuffAttackTNT> LOLI_BUFF_ATTACK_TNT_TYPE() {
+		if (loliBuffAttackTntTypeInstance == null) {
+			loliBuffAttackTntTypeInstance = EntityType.Builder
+					.<EntityLoliBuffAttackTNT>of((type, level) -> new EntityLoliBuffAttackTNT(level), MobCategory.MISC)
+					.sized(0.98F, 0.98F)
+					.clientTrackingRange(80)
+					.updateInterval(3)
+					.build(LoliPickaxe.MODID + ":loli_buff_attack_tnt");
+		}
+		return loliBuffAttackTntTypeInstance;
+	}
 
 	static {
 		// 显式写出注册名，保证与 1.12.2 的资源路径一致（lolipickaxe:loli / lolipickaxe:loli_buff_attack_tnt）。
-		ENTITY_TYPES.register("loli", () -> LOLI_TYPE);
-		ENTITY_TYPES.register("loli_buff_attack_tnt", () -> LOLI_BUFF_ATTACK_TNT_TYPE);
+		// 只登记供应器，构造被推迟到 Forge 调用时（此时注册表尚未冻结）。
+		ENTITY_TYPES.register("loli", EntityLoader::LOLI_TYPE);
+		ENTITY_TYPES.register("loli_buff_attack_tnt", EntityLoader::LOLI_BUFF_ATTACK_TNT_TYPE);
 		// 实体属性的注册事件只能从 mod 事件总线拿到，这里在类加载（CommonProxy.preInit）时自行挂上。
 		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 		modBus.addListener(EntityLoader::onEntityAttributeCreation);
@@ -76,7 +104,7 @@ public class EntityLoader {
 	 * @param event Forge 的实体属性创建事件（mod 总线，不可取消）
 	 */
 	private static void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
-		event.put(LOLI_TYPE, EntityLoli.createAttributes().build());
+		event.put(LOLI_TYPE(), EntityLoli.createAttributes().build());
 	}
 
 }

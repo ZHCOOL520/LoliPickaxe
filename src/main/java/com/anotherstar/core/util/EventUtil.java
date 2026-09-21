@@ -288,7 +288,11 @@ public class EventUtil {
 	 */
 	public static void onUpdate(LivingEntity entity) {
 		ILoliDataHolder holder = (ILoliDataHolder) entity;
-		boolean isLoli = LoliPickaxeUtil.invHaveLoliPickaxe(entity);
+		// 一次扫描同时得到「是否受保护」与「那把萝莉镐」：
+		// 原实现先 invHaveLoliPickaxe(...) 再在下面 getLoliPickaxe(...)，
+		// 等于把整个背包（含光标）扫两遍。合并后逻辑逐格等价，只是少扫一遍。
+		LoliPickaxeUtil.LoliScanResult scan = LoliPickaxeUtil.scanLoli(entity);
+		boolean isLoli = scan.hasLoli;
 		// 每 tick 只在这里判断一次，getHealth() 等高频方法只读该缓存
 		holder.setLoliProtected(isLoli);
 
@@ -320,7 +324,7 @@ public class EventUtil {
 				if (player instanceof ServerPlayer) {
 					((ServerPlayer) player).onUpdateAbilities();
 				}
-				applyReachDistance(player);
+				applyReachDistance(player, scan.pickaxe);
 			}
 		}
 	}
@@ -334,11 +338,23 @@ public class EventUtil {
 	 * @param player 玩家
 	 */
 	public static void applyReachDistance(Player player) {
+		applyReachDistance(player, LoliPickaxeUtil.getLoliPickaxe(player));
+	}
+
+	/**
+	 * 使用「已扫描得到的萝莉镐物品堆」同步挖掘距离，避免重复扫描背包。
+	 *
+	 * <p>语义与 {@link #applyReachDistance(Player)} 完全一致，只是把取物品这一步外置，
+	 * 供已经完成扫描的调用方（如 {@link #onUpdate(LivingEntity)}）复用。
+	 *
+	 * @param player   玩家
+	 * @param loliItem 该玩家当前生效的萝莉镐物品堆；未持有时传 {@link ItemStack#EMPTY}
+	 */
+	public static void applyReachDistance(Player player, ItemStack loliItem) {
 		if (player.getAttribute(ForgeMod.BLOCK_REACH.get()) == null) {
 			return;
 		}
-		ItemStack loli = LoliPickaxeUtil.getLoliPickaxe(player);
-		double distance = loli.isEmpty() ? 0.0 : ConfigLoader.getDouble(loli, "loliPickaxeBlockReachDistance");
+		double distance = loliItem.isEmpty() ? 0.0 : ConfigLoader.getDouble(loliItem, "loliPickaxeBlockReachDistance");
 		double target = distance > 0 ? distance : player.getAttribute(ForgeMod.BLOCK_REACH.get()).getAttribute().getDefaultValue();
 		if (player.getAttribute(ForgeMod.BLOCK_REACH.get()).getBaseValue() != target) {
 			player.getAttribute(ForgeMod.BLOCK_REACH.get()).setBaseValue(target);

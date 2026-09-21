@@ -84,7 +84,7 @@ public class EntityLoli extends PathfinderMob implements IEntityLoli {
 	 * @param level 实体所在世界
 	 */
 	public EntityLoli(Level level) {
-		this(EntityLoader.LOLI_TYPE, level);
+		this(EntityLoader.LOLI_TYPE(), level);
 	}
 
 	/**
@@ -269,7 +269,7 @@ public class EntityLoli extends PathfinderMob implements IEntityLoli {
 	@Override
 	public void onRemovedFromWorld() {
 		if (!dispersal && !this.level().isClientSide) {
-			EntityLoli loli = new EntityLoli(EntityLoader.LOLI_TYPE, this.level());
+			EntityLoli loli = new EntityLoli(EntityLoader.LOLI_TYPE(), this.level());
 			loli.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
 			this.level().addFreshEntity(loli);
 			dispersal = true;

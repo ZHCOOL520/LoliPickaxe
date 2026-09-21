@@ -105,16 +105,36 @@ public class ItemLoliPickaxeMaterial extends Item {
 	}
 
 	/**
-	 * 注册客户端模型属性，对应 1.12.2 的 {@code addPropertyOverride}（仅在客户端调用）。
-	 * <p>
-	 * 注册属性 {@code lolipickaxe:end}：当 {@link #differentEnd} 为 true 且该堆叠是最后一级时返回 1.0，否则 0.0，
-	 * 供模型 JSON 切换「终极形态」贴图。
+	 * 注册客户端模型属性，对应 1.12.2 的 {@code addPropertyOverride}。
+	 *
+	 * <p><b>注意</b>：1.20.1 的物品<b>不会自动调用本方法</b> ——
+	 * 只有在通过 {@code RegisterClientExtensionsEvent} 注册了
+	 * {@link IClientItemExtensions} 时才会被访问，而本项目并未走那条路径。
+	 * 因此这里保留本方法作为「该物品需要 end 属性」的自我描述，
+	 * <b>真正生效的注册在 {@code ItemModelPropertyLoader}</b>（客户端统一登记）。
 	 *
 	 * @param consumer 客户端物品扩展收集器，由 Forge 传入，不可为 null
 	 */
 	@Override
 	public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-		ItemProperties.register(this, new ResourceLocation(LoliPickaxe.MODID, "end"), (stack, level, entity, seed) -> differentEnd && stack.getDamageValue() == subCount - 1 ? 1.0F : 0.0F);
+		ItemProperties.register(this, new ResourceLocation(LoliPickaxe.MODID, "end"), (stack, level, entity, seed) -> getEndPropertyValue(stack));
+	}
+
+	/**
+	 * 计算 {@code lolipickaxe:end} 属性的取值，供客户端模型 override 使用。
+	 *
+	 * <p>取值规则与 1.12.2 一致：仅当本材料具备「终极形态独立贴图」且该堆叠正好是最后一级时返回 1.0。
+	 *
+	 * @param stack 待判定的物品堆叠；不可为 null
+	 * @return 1.0 表示使用终极形态贴图，0.0 表示使用普通贴图
+	 */
+	public float getEndPropertyValue(ItemStack stack) {
+		return differentEnd && stack.getDamageValue() == subCount - 1 ? 1.0F : 0.0F;
+	}
+
+	/** @return 本材料是否让最后一级使用独立贴图（决定是否需要注册 {@code end} 属性） */
+	public boolean hasDifferentEnd() {
+		return differentEnd;
 	}
 
 	/** @return 子类型（等级）总数，取值范围 {@code >= 1}；1 表示无子类型 */

@@ -38,7 +38,17 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 public class LoliPickaxeEvent {
 
-	public static final Set<Class<? extends LivingEntity>> antiEntity = Sets.newHashSet();
+	/**
+	 * 「正在被强制击杀」的实体类型集合。
+	 *
+	 * <p><b>为什么必须是并发集合</b>：{@link LoliPickaxeUtil#killEntityLiving} 在调用
+	 * {@code entity.die()} <b>之前</b>加入本集合、<b>之后</b>移除，而 {@code die()} 内部可能触发
+	 * 掉落物生成并进而触发 {@link #onEntityItemJoinWorld}（遍历本集合）。
+	 * 原实现使用普通 {@code HashSet}，一旦「遍历过程中又发生一次击杀」就会抛出
+	 * {@link java.util.ConcurrentModificationException} 并中断服务端 tick（表现为服务端崩溃）。
+	 * 改用 {@code ConcurrentHashMap.newKeySet()} 后遍历为弱一致，不再抛出该异常。
+	 */
+	public static final Set<Class<? extends LivingEntity>> antiEntity = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	private Set<String> flyingPlayer = Sets.newHashSet();
 	private Set<Player> loliPlayer = Sets.newHashSet();
@@ -97,7 +107,12 @@ public class LoliPickaxeEvent {
 	@SubscribeEvent(priority = EventPriority.LOWEST)
 	public void onPlayerUpdate(LivingEvent.LivingTickEvent event) {
 		LivingEntity entity = event.getEntity();
-		boolean isLoli = LoliPickaxeUtil.invHaveLoliPickaxe(entity);
+		// 一次扫描同时得到「是否持有」与「那把萝莉镐」。
+		// 原实现先 invHaveLoliPickaxe(entity)，随后又 getLoliPickaxe(player)，
+		// 等于每个生物每 tick 把玩家背包完整扫两遍；在成千实体的大型整合包里这是纯浪费。
+		// 合并后判定顺序、归属校验与丢弃行为逐格等价。
+		LoliPickaxeUtil.LoliScanResult scan = LoliPickaxeUtil.scanLoli(entity);
+		boolean isLoli = scan.hasLoli;
 		if (isLoli && !entity.level().isClientSide) {
 			entity.extinguishFire();
 			if (ConfigLoader.getBoolean(entity.getMainHandItem(), "loliPickaxeAutoKillRangeEntity")) {
@@ -108,7 +123,7 @@ public class LoliPickaxeEvent {
 		if (entity instanceof Player) {
 			Player player = (Player) entity;
 			String name = player.getName().getString();
-			ItemStack stack = LoliPickaxeUtil.getLoliPickaxe(player);
+			ItemStack stack = scan.pickaxe;
 			ILoliPlayerData data = (ILoliPlayerData) player;
 			if (data.getHodeLoli() > 0) {
 				data.setHodeLoli(data.getHodeLoli() - 1);
@@ -118,7 +133,7 @@ public class LoliPickaxeEvent {
 				loliPlayer.add(player);
 				player.getAbilities().setFlyingSpeed(0.05F);
 				player.getAbilities().setWalkingSpeed(0.1F);
-				EventUtil.applyReachDistance(player);
+				EventUtil.applyReachDistance(player, stack);
 				if (!player.level().isClientSide) {
 					List<MobEffect> potions = Lists.newArrayList();
 					if (stack.hasTag() && stack.getTag().contains("LoliPotion")) {
@@ -150,7 +165,7 @@ public class LoliPickaxeEvent {
 				}
 				loliPlayer.remove(player);
 			}
-			if (ConfigLoader.loliPickaxeFindOwner && !player.level().isClientSide) {
+			if (ConfigLoader.loliPickaxeFindOwner && !player.level().isClientSide && shouldFindOwner(player)) {
 				List<ItemEntity> entityItems = player.level().getEntitiesOfClass(ItemEntity.class, new AABB(player.getX() - ConfigLoader.loliPickaxeFindOwnerRange, player.getY() - ConfigLoader.loliPickaxeFindOwnerRange, player.getZ() - ConfigLoader.loliPickaxeFindOwnerRange, player.getX() + ConfigLoader.loliPickaxeFindOwnerRange, player.getY() + ConfigLoader.loliPickaxeFindOwnerRange, player.getZ() + ConfigLoader.loliPickaxeFindOwnerRange));
 				for (ItemEntity entityItem : entityItems) {
 					ItemStack estack = entityItem.getItem();
@@ -180,6 +195,34 @@ public class LoliPickaxeEvent {
 		}
 		return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(name));
 	}
+
+	/**
+	 * 寻主查询的节流控制。
+	 *
+	 * <p><b>为什么需要节流</b>：寻主逻辑每次都要对 {@code loliPickaxeFindOwnerRange}
+	 * （默认 50 格）做一次立方体范围的实体查询。在大型整合包里这项查询每 tick、每玩家执行一次，
+	 * 是相当可观的开销（范围实体查询需要遍历区块内的实体列表）。
+	 *
+	 * <p><b>为什么不改变玩法</b>：寻主的目的是「让掉在地上的、属于本玩家的萝莉镐被吸回」，
+	 * 这本身是个持续状态而非瞬时判定。改为每 {@value #FIND_OWNER_INTERVAL} tick 检查一次后，
+	 * 掉落物最多晚 0.1~0.15 秒被吸回，玩家几乎无法感知；
+	 * 而查询开销降到原来的 1/{@value #FIND_OWNER_INTERVAL}。
+	 * 这是「保持结果不变、仅降低检查频率」的优化，不改变任何配置项语义。
+	 *
+	 * @param player 待检查的玩家
+	 * @return true 表示本 tick 应当执行寻主查询
+	 */
+	private boolean shouldFindOwner(Player player) {
+		int interval = FIND_OWNER_INTERVAL;
+		if (interval <= 1) {
+			return true;
+		}
+		int tick = player.tickCount;
+		return tick % interval == 0;
+	}
+
+	/** 寻主查询的执行间隔（tick）。取 3 即每 0.15 秒一次，兼顾响应速度与开销。 */
+	private static final int FIND_OWNER_INTERVAL = 3;
 
 	@SubscribeEvent
 	public void onEntityItemJoinWorld(EntityJoinLevelEvent event) {
@@ -214,7 +257,11 @@ public class LoliPickaxeEvent {
 
 	@SubscribeEvent
 	public void onPlayerOut(PlayerEvent.PlayerLoggedOutEvent event) {
+		// 两个集合都必须清理：flyingPlayer 以玩家名为键，若不清理会在玩家
+		// 「持有萝莉镐时退出」后永久残留，造成集合无界增长；
+		// loliPlayer 则持有 Player 强引用，不清理会阻止玩家对象被 GC。
 		loliPlayer.remove(event.getEntity());
+		flyingPlayer.remove(event.getEntity().getName().getString());
 	}
 
 }

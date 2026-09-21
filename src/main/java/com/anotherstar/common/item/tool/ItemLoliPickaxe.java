@@ -46,10 +46,10 @@ public class ItemLoliPickaxe extends PickaxeItem implements ILoli {
 	private static ItemStack def = null;
 
 	private static void init() {
-		def = new ItemStack(ItemLoader.loliPickaxe);
+		def = new ItemStack(ItemLoader.loliPickaxe());
 		Map<Enchantment, Integer> enchMap = Maps.newHashMap();
 		enchMap.put(Enchantments.BLOCK_FORTUNE, 32);
-		enchMap.put(EnchantmentLoader.loliAutoFurnace, 1);
+		enchMap.put(EnchantmentLoader.loliAutoFurnace(), 1);
 		EnchantmentHelper.setEnchantments(enchMap, def);
 		ListTag list = new ListTag();
 		CompoundTag element = new CompoundTag();
@@ -292,7 +292,14 @@ public class ItemLoliPickaxe extends PickaxeItem implements ILoli {
 
 	@Override
 	public boolean isOwner(ItemStack stack, Player player) {
-		return stack.getTag().getString("Owner").equals(player.getName().getString()) || stack.getTag().getString("OwnerUUID").equals(player.getUUID().toString());
+		// getTag() 在物品无 NBT 时为 null；原实现直接解引用会抛 NPE。
+		// 调用链 checkOwner → isOwner 会在「物品尚未被 inventoryTick 写入 Owner」的瞬间命中，
+		// 属于高频路径，因此这里必须做空值保护。
+		CompoundTag nbt = stack.getTag();
+		if (nbt == null) {
+			return false;
+		}
+		return nbt.getString("Owner").equals(player.getName().getString()) || nbt.getString("OwnerUUID").equals(player.getUUID().toString());
 	}
 
 	public void setOwner(ItemStack stack, Player player) {
@@ -315,9 +322,68 @@ public class ItemLoliPickaxe extends PickaxeItem implements ILoli {
 		return true;
 	}
 
+	/**
+	 * 每个萝莉镐物品堆对应<b>唯一</b>的容器实例缓存。
+	 *
+	 * <p><b>为什么必须缓存</b>：{@link InventoryLoliBase} 是「{@code startOpen} 读入全部页 →
+	 * 内存中修改 → {@code stopOpen} 写回全部页」的模型。若每次 {@link #getInventory(ItemStack)}
+	 * 都返回新实例，就会出现多个实例各自持有同一物品 NBT 的一份内存副本：
+	 * 自动收纳（掉落物收集）与已打开的分页储藏室界面并发时，
+	 * <b>后调用 {@code stopOpen} 的那个实例会把另一个实例的改动整份覆盖掉</b>，造成物品凭空消失。
+	 *
+	 * <p><b>为什么这样改不改变逻辑</b>：容器对外的读写语义、页的组织方式、落盘格式全部不变，
+	 * 只是把「同一物品的多个内存视图」收敛为「同一物品只有一个权威视图」。
+	 * 单线程串行场景（只有 GUI、或只有自动收纳）的表现与改动前完全一致。
+	 *
+	 * <p><b>为什么用弱引用 + 身份比较</b>：
+	 * <ul>
+	 *   <li>键必须是「物品堆对象的身份」而非内容相等 —— {@code ItemStack} 未重写
+	 *       {@code equals/hashCode}，默认即身份语义，符合我们的需要；</li>
+	 *   <li>用 {@link WeakHashMap} 保存：物品堆一旦不再被任何地方引用（被销毁/丢弃/替换），
+	 *       其缓存条目会被 GC 自动回收，避免长时间运行下缓存无界增长；</li>
+	 *   <li>值持有该物品堆的引用，因此额外用 {@link java.lang.ref.WeakReference} 包装值，
+	 *       避免「值 → 物品堆 → 键」形成强引用环导致 WeakHashMap 永不回收。</li>
+	 * </ul>
+	 */
+	private static final Map<ItemStack, java.lang.ref.WeakReference<InventoryLoliPickaxe>> INVENTORY_CACHE = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
 	@Override
 	public ILoliInventory getInventory(ItemStack stack) {
-		return new InventoryLoliPickaxe(stack);
+		if (stack.isEmpty()) {
+			return new InventoryLoliPickaxe(stack);
+		}
+		synchronized (INVENTORY_CACHE) {
+			java.lang.ref.WeakReference<InventoryLoliPickaxe> ref = INVENTORY_CACHE.get(stack);
+			InventoryLoliPickaxe cached = ref == null ? null : ref.get();
+			if (cached == null) {
+				cached = new InventoryLoliPickaxe(stack);
+				INVENTORY_CACHE.put(stack, new java.lang.ref.WeakReference<>(cached));
+			}
+			return cached;
+		}
+	}
+
+	/**
+	 * 清理某个萝莉镐物品堆的容器缓存。
+	 *
+	 * <p>物品被销毁、消耗或玩家退出时可调用，立即释放对应缓存（弱引用本身也会自动回收，
+	 * 这里是「确定性释放」的可选加速）。不影响任何容器数据本身。
+	 *
+	 * @param stack 目标物品堆
+	 */
+	public static void clearInventoryCache(ItemStack stack) {
+		synchronized (INVENTORY_CACHE) {
+			INVENTORY_CACHE.remove(stack);
+		}
+	}
+
+	/**
+	 * 清空全部容器缓存（例如服务器停止、存档切换时）。
+	 */
+	public static void clearAllInventoryCaches() {
+		synchronized (INVENTORY_CACHE) {
+			INVENTORY_CACHE.clear();
+		}
 	}
 
 }

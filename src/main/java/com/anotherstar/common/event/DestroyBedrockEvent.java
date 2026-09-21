@@ -62,7 +62,7 @@ public class DestroyBedrockEvent {
 		boolean mandatoryDrop = ConfigLoader.getBoolean(loli, "loliPickaxeMandatoryDrop");
 		// EnchantmentHelper.getItemEnchantmentLevel 已废弃，改用其推荐的 ItemStack#getEnchantmentLevel（等价）。
 		boolean silkTouch = loli.getEnchantmentLevel(Enchantments.SILK_TOUCH) > 0;
-		boolean autoFurnace = loli.getEnchantmentLevel(EnchantmentLoader.loliAutoFurnace) > 0;
+		boolean autoFurnace = loli.getEnchantmentLevel(EnchantmentLoader.loliAutoFurnace()) > 0;
 		boolean auto = ConfigLoader.getBoolean(loli, "loliPickaxeAutoAccept") && ((IContainer) loli.getItem()).hasInventory(loli);
 		ILoliInventory inventory = null;
 		if (auto) {
@@ -117,8 +117,23 @@ public class DestroyBedrockEvent {
 							dropStacks.addAll(furnaceed);
 						}
 					}
-					if (dropStacks.isEmpty() && mandatoryDrop && state.getBlock().asItem() != Items.AIR) {
-						dropStacks.add(new ItemStack(state.getBlock()));
+					if (mandatoryDrop) {
+						// 先剔除空堆：战利品表可能返回「列表非空、但元素全是空堆」，
+						// 旧写法只在 dropStacks.isEmpty() 成立时才补掉落，遇到这种情况直接失效，
+						// 这正是玩家反馈「强制掉落无法使用」的原因之一。
+						dropStacks.removeIf(ItemStack::isEmpty);
+						if (dropStacks.isEmpty()) {
+							// 用 BlockState 取「选取方块」物品，保留方块状态与 NBT；
+							// 旧写法 new ItemStack(state.getBlock()) 会丢失状态信息
+							//（例如不同木材种类、带内容的容器方块会掉落错误物品）。
+							ItemStack mandatory = state.getBlock().getCloneItemStack(serverLevel, curPos, state);
+							if (mandatory.isEmpty() && state.getBlock().asItem() != Items.AIR) {
+								mandatory = new ItemStack(state.getBlock().asItem());
+							}
+							if (!mandatory.isEmpty()) {
+								dropStacks.add(mandatory);
+							}
+						}
 					}
 					drops.addAll(dropStacks);
 					level.removeBlock(curPos, false);

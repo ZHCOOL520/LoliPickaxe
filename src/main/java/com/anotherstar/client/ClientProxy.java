@@ -57,8 +57,8 @@ public class ClientProxy extends CommonProxy {
 	}
 
 	private static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-		event.registerEntityRenderer(EntityLoader.LOLI_TYPE, context -> new RenderLoli(context, new ModelLoli(context.bakeLayer(ModelLoli.LAYER_LOCATION)), 0.3F));
-		event.registerEntityRenderer(EntityLoader.LOLI_BUFF_ATTACK_TNT_TYPE, RenderLoliBuffAttackTNT::new);
+		event.registerEntityRenderer(EntityLoader.LOLI_TYPE(), context -> new RenderLoli(context, new ModelLoli(context.bakeLayer(ModelLoli.LAYER_LOCATION)), 0.3F));
+		event.registerEntityRenderer(EntityLoader.LOLI_BUFF_ATTACK_TNT_TYPE(), RenderLoliBuffAttackTNT::new);
 	}
 
 	private static void onRegisterLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {

@@ -8,6 +8,7 @@ import com.anotherstar.common.config.ConfigLoader;
 import com.anotherstar.network.NetworkHandler;
 
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -39,8 +40,14 @@ public class LoliPickaxe {
 	public static final String MODID = "lolipickaxe";
 	/** 模组显示名称，仅用于日志与元数据展示。 */
 	public static final String NAME = "LoliPickaxe Mod";
-	/** 模组版本号；1.12.2 中该值由 mcmod.info / @Mod 注解携带，此处改为代码常量。 */
-	public static final String VERSION = "1.2.16f";
+	/**
+	 * 模组版本号（仅供代码内展示使用）。
+	 *
+	 * <p>真实来源是 {@code gradle.properties} 的 {@code mod_version}，
+	 * 构建时经 processResources 展开写入 mods.toml。
+	 * 此常量需与之保持一致，避免代码与元数据互相矛盾。
+	 */
+	public static final String VERSION = "1.0";
 
 	/** 全局日志器，供整个模组统一输出日志。 */
 	public static final Logger LOGGER = LogManager.getLogger(NAME);
@@ -75,6 +82,12 @@ public class LoliPickaxe {
 		modBus.addListener(this::commonSetup);
 		modBus.addListener(this::onConfigLoad);
 		modBus.addListener(this::onConfigReload);
+
+		// 【必须注册到 Forge 事件总线】命令注册走的是 MinecraftForge.EVENT_BUS 的
+		// RegisterCommandsEvent，而不是 mod bus。此前 CommonProxy.onRegisterCommands 只被定义、
+		// 从未注册，属于死代码，导致 /lolipickaxe 命令在游戏中完全不存在
+		// （在整合包里会表现为「功能对不上文档」）。这里显式注册使其真正生效。
+		MinecraftForge.EVENT_BUS.addListener(proxy::onRegisterCommands);
 
 		// 仅客户端执行的初始化钩子（例如屏幕、渲染器注册），避免在服务端触发客户端类加载
 		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientProxy.clientSetup(modBus));

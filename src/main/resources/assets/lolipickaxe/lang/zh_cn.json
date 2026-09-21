@@ -182,5 +182,18 @@
   "key.lolipickaxe.loli_potion": "药水§c氪金萝莉",
   "key.lolipickaxe.loli_space_folding": "跨世界§c氪金萝莉",
   "key.lolipickaxe.loli_container": "打开§c氪金萝莉储藏室",
-  "key.lolipickaxe.loli_container_blacklist": "打开§c氪金萝莉黑名单"
+  "key.lolipickaxe.loli_container_blacklist": "打开§c氪金萝莉黑名单",
+  "jei.lolipickaxe.category.pickaxe": "氪金萝莉合成",
+  "jei.lolipickaxe.category.small_pickaxe": "小萝莉属性升级",
+  "jei.lolipickaxe.category.split": "材料拆分",
+  "jei.lolipickaxe.category.superposition": "材料叠加",
+  "jei.lolipickaxe.info.pickaxe": "用满级小萝莉与满级生物灵魂即可合成氪金萝莉。",
+  "jei.lolipickaxe.category.mob_drop": "生物掉落",
+  "jei.lolipickaxe.probability": "掉落概率：%s",
+  "jei.lolipickaxe.info.small_pickaxe": "用铁斧、铁镐、铁锹与铁锭在工作台合成即可获得。",
+  "jei.lolipickaxe.info.soul": "击杀任意生物时有 %s 的概率掉落。用于升级小萝莉的属性。",
+  "jei.lolipickaxe.info.card": "击杀任意生物时有 %s 的概率掉落。",
+  "jei.lolipickaxe.info.card_album": "击杀任意生物时有 %s 的概率掉落。",
+  "jei.lolipickaxe.info.record": "击杀苦力怕时有 %s 的概率掉落。",
+  "jei.lolipickaxe.info.tnt": "用 TNT 在工作台合成：9 个 TNT 得蓝屏炸弹，5 个得蹦溃炸弹，8 个得未响应炸弹。"
 }

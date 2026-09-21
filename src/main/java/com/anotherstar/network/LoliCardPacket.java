@@ -78,13 +78,25 @@ public class LoliCardPacket {
 
 	public static void handle(LoliCardPacket msg, Supplier<NetworkEvent.Context> ctx) {
 		ServerPlayer player = ctx.get().getSender();
+		if (player == null) {
+			ctx.get().setPacketHandled(true);
+			return;
+		}
+		// 槽位索引来自客户端：Inventory#getItem 本身有越界保护，越界会返回 EMPTY，
+		// 因此这里不会崩溃，但名称字符串必须在写入 NBT 前做长度限制，
+		// 避免客户端把任意长（最多 32k）字符串持久化进物品数据。
+		String name = msg.getName();
+		if (name == null || name.length() > MAX_NAME_LENGTH) {
+			ctx.get().setPacketHandled(true);
+			return;
+		}
 		ItemStack stack = player.getInventory().getItem(msg.getSlot());
 		switch (msg.getType()) {
 		case LOLICARD:
 			if (stack.getItem() instanceof ItemLoliCard) {
 				CompoundTag nbt = stack.getOrCreateTag();
 				if (!nbt.contains("picture")) {
-					nbt.putString("picture", msg.getName());
+					nbt.putString("picture", name);
 				}
 			}
 			break;
@@ -92,12 +104,15 @@ public class LoliCardPacket {
 			if (stack.getItem() instanceof ItemLoliCardAlbum) {
 				CompoundTag nbt = stack.getOrCreateTag();
 				if (!nbt.contains("PictureGroup")) {
-					nbt.putString("PictureGroup", msg.getName());
+					nbt.putString("PictureGroup", name);
 				}
 			}
 			break;
 		}
 		ctx.get().setPacketHandled(true);
 	}
+
+	/** 允许写入卡片的名字/图片组名最大长度，防止客户端用超长字符串膨胀物品 NBT。 */
+	private static final int MAX_NAME_LENGTH = 256;
 
 }

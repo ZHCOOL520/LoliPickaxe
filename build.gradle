@@ -61,11 +61,26 @@ mixin {
 
 repositories {
     mavenCentral()
+    // JEI 官方 maven（2023 年 1 月起 JEI 制品托管于此）
+    maven {
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    // JEI 兼容：只用于编译期引用 API，运行时由玩家自行安装 JEI。
+    // 之所以用 compileOnly 而不是 implementation：
+    //   1) 不把 JEI 打进本模组，避免体积膨胀与版本冲突；
+    //   2) 未安装 JEI 的玩家仍可正常加载本模组（插件类由 @JeiPlugin 被 JEI 主动发现，
+    //      没有 JEI 时该注解不会被扫描，相关类也不会被加载）。
+    // runtimeOnly 仅在开发环境（runClient）中提供 JEI，方便调试。
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
 }
 
 tasks.named('processResources', ProcessResources).configure {

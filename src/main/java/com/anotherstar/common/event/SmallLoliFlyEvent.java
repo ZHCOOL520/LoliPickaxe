@@ -36,13 +36,13 @@ public class SmallLoliFlyEvent {
 			String name = player.getName().getString();
 			for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
 				ItemStack stack = player.getInventory().getItem(i);
-				if (stack.getItem() == ItemLoader.smallLoliPickaxe) {
-					if (ItemLoader.smallLoliPickaxe.canFly(stack)) {
+				if (stack.getItem() == ItemLoader.smallLoliPickaxe()) {
+					if (ItemLoader.smallLoliPickaxe().canFly(stack)) {
 						flyingPlayer.add(name);
 						player.getAbilities().mayfly = true;
 					}
 					if (!player.level().isClientSide) {
-						switch (ItemLoader.smallLoliPickaxe.buffLevel(stack)) {
+						switch (ItemLoader.smallLoliPickaxe().buffLevel(stack)) {
 						case 3:
 							player.getFoodData().eat(20, 1.0F);
 						case 2:
@@ -51,8 +51,8 @@ public class SmallLoliFlyEvent {
 							player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 410, 0, false, false));
 						}
 					}
-					dodgeMap.put(name, ItemLoader.smallLoliPickaxe.getDodge(stack));
-					antiInjury.put(name, ItemLoader.smallLoliPickaxe.getAntiInjury(stack));
+					dodgeMap.put(name, ItemLoader.smallLoliPickaxe().getDodge(stack));
+					antiInjury.put(name, ItemLoader.smallLoliPickaxe().getAntiInjury(stack));
 					return;
 				}
 			}

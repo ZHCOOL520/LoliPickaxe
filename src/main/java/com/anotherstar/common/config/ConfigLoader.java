@@ -86,10 +86,13 @@ public class ConfigLoader {
 
 	// ------------------------------------------------------------------
 	// 配置字段声明区。
-	// 下面的每个字段都由 @ConfigField 描述：comment 即中文名称，*DefaultValue 为写进 toml 的默认值，
-	// type() 里是否含 CONFIG / COMMAND / GUI 决定它能否落盘、能否用命令改、能否在 GUI 里改；
-	// GUI 可改项还会被写入物品 NBT，实现"每把萝莉镐独立配置"。
-	// 单位约定：范围/距离为方块，时间为 tick（1 秒 = 20 tick），毫秒类字段在 comment 中特别标注。
+	//
+	// 【声明期默认值约定】所有 LIST / MAP 字段都在这里直接初始化为空集合，
+	// 而不是留 null 等 ModConfigEvent.Loading 再填充。原因：
+	//   1) 配置加载事件晚于模组构造与部分早期 tick，其间任何读取都会 NPE；
+	//   2) 大型整合包里实体/维度事件触发时机不可控，越早拥有非 null 值越安全。
+	// 空集合与「配置项尚未加载」在语义上等价（读取方都是做 contains/get 查询），
+	// 因此这不改变任何玩法结果，只是消除了空指针风险。
 	// ------------------------------------------------------------------
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "最大采掘范围", valueType = ValurType.INT, intDefaultValue = 5)
 	public static int loliPickaxeMaxRange;
@@ -127,17 +130,17 @@ public class ConfigLoader {
 	public static int loliPickaxeDuration;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "丢弃保护时间(ms)", valueType = ValurType.INT, intDefaultValue = 200)
 	public static int loliPickaxeDropProtectTime;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "强制清除生物", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "强制清除生物", valueType = ValurType.BOOLEAN, booleanDefaultValue = true, warning = true)
 	public static boolean loliPickaxeCompulsoryRemove;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "范围攻击对非怪物有效", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeValidToAmityEntity;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "对全部实体有效", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
 	public static boolean loliPickaxeValidToAllEntity;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "清空玩家背包", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "清空玩家背包", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeClearInventory;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "缴械", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "缴械", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeDropItems;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "踢出玩家", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "踢出玩家", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeKickPlayer;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "踢出玩家消息", valueType = ValurType.STRING, stringDefaultValue = "你被氪金萝莉踢出了服务器")
 	public static String loliPickaxeKickMessage;
@@ -146,11 +149,11 @@ public class ConfigLoader {
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "伊邪那美(需同时开启踢出玩家)", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeReincarnation;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "伊邪那美玩家列表", valueType = ValurType.LIST, listDefaultValue = {})
-	public static List<String> loliPickaxeReincarnationPlayerList;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "灵魂超度", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
+	public static List<String> loliPickaxeReincarnationPlayerList = Lists.newArrayList();
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "灵魂超度", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeBeyondRedemption;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "灵魂超度玩家列表", valueType = ValurType.LIST, listDefaultValue = {})
-	public static List<String> loliPickaxeBeyondRedemptionPlayerList;
+	public static List<String> loliPickaxeBeyondRedemptionPlayerList = Lists.newArrayList();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "寻找所有者", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeFindOwner;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "寻找所有者范围", valueType = ValurType.INT, intDefaultValue = 50)
@@ -162,7 +165,7 @@ public class ConfigLoader {
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "未响应打击", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
 	public static boolean loliPickaxeFailRespondAttack;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "强制死亡延迟特化列表(实体ID:Tick)", valueType = ValurType.MAP, mapDefaultValue = { "ender_dragon:::201" }, mapKeyType = ValurType.STRING, mapValueType = ValurType.INT)
-	public static Map<String, Integer> loliPickaxeDelayRemoveList;
+	public static Map<String, Integer> loliPickaxeDelayRemoveList = Maps.newHashMap();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "左键范围攻击", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeKillFacing;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "范围攻击范围", valueType = ValurType.INT, intDefaultValue = 50, intMinValue = 0, intMaxValueField = "loliPickaxeMaxKillFacingRange")
@@ -176,12 +179,12 @@ public class ConfigLoader {
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "视觉迷惑", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
 	public static boolean loliPickaxeInvisible;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "GUI可修改选项", valueType = ValurType.LIST, listType = ValurType.STRING, listDefaultValue = { "loliPickaxeMandatoryDrop", "loliPickaxeStopOnLiquid", "loliPickaxeBlockReachDistance", "loliPickaxeAutoAccept", "loliPickaxeThorns", "loliPickaxeKillRangeEntity", "loliPickaxeKillRange", "loliPickaxeAutoKillRangeEntity", "loliPickaxeAutoKillRange", "loliPickaxeCompulsoryRemove", "loliPickaxeValidToAmityEntity", "loliPickaxeValidToAllEntity", "loliPickaxeClearInventory", "loliPickaxeDropItems", "loliPickaxeKickPlayer", "loliPickaxeKickMessage", "loliPickaxeReincarnation", "loliPickaxeBeyondRedemption", "loliPickaxeBlueScreenAttack", "loliPickaxeExitAttack", "loliPickaxeFailRespondAttack", "loliPickaxeKillFacing", "loliPickaxeKillFacingRange", "loliPickaxeKillFacingSlope", "loliPickaxeInfiniteBattery", "loliPickaxeInvisible", "loliPickaxeShowInvisible" }, warning = true, warningMethod = "guiChangeListWarning")
-	public static List<String> loliPickaxeGuiChangeList;
+	public static List<String> loliPickaxeGuiChangeList = Lists.newArrayList("loliPickaxeMandatoryDrop", "loliPickaxeStopOnLiquid", "loliPickaxeBlockReachDistance", "loliPickaxeAutoAccept", "loliPickaxeThorns", "loliPickaxeKillRangeEntity", "loliPickaxeKillRange", "loliPickaxeAutoKillRangeEntity", "loliPickaxeAutoKillRange", "loliPickaxeCompulsoryRemove", "loliPickaxeValidToAmityEntity", "loliPickaxeValidToAllEntity", "loliPickaxeClearInventory", "loliPickaxeDropItems", "loliPickaxeKickPlayer", "loliPickaxeKickMessage", "loliPickaxeReincarnation", "loliPickaxeBeyondRedemption", "loliPickaxeBlueScreenAttack", "loliPickaxeExitAttack", "loliPickaxeFailRespondAttack", "loliPickaxeKillFacing", "loliPickaxeKillFacingRange", "loliPickaxeKillFacingSlope", "loliPickaxeInfiniteBattery", "loliPickaxeInvisible", "loliPickaxeShowInvisible");
 	@ConfigField(type = {}, comment = "额外唱片列表(声音:唱片名:唱片ID)", valueType = ValurType.LIST, listType = ValurType.STRING, listDefaultValue = { "lolirecord:loliRecord:loli_record" })
-	public static List<String> loliRecodeNames;
+	public static List<String> loliRecodeNames = Lists.newArrayList("lolirecord:loliRecord:loli_record");
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "萝莉卡片掉落概率", valueType = ValurType.DOUBLE, doubleDefaultValue = 0.1)
 	public static double loliCardDropProbability;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "萝莉卡片掉落概率", valueType = ValurType.DOUBLE, doubleDefaultValue = 0.01)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "萝莉卡片册掉落概率", valueType = ValurType.DOUBLE, doubleDefaultValue = 0.01)
 	public static double loliCardAlbumDropProbability;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "萝莉唱片掉落概率", valueType = ValurType.DOUBLE, doubleDefaultValue = 0.001)
 	public static double loliRecordDropProbability;
@@ -204,27 +207,38 @@ public class ConfigLoader {
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "萝莉卡片渲染展示框", valueType = ValurType.BOOLEAN, booleanDefaultValue = false)
 	public static boolean loliCardRenderFrame;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "附魔最大等级列表", valueType = ValurType.MAP, mapDefaultValue = {}, mapKeyType = ValurType.STRING, mapValueType = ValurType.INT)
-	public static Map<String, Integer> loliPickaxeEnchantmentLimit;
+	public static Map<String, Integer> loliPickaxeEnchantmentLimit = Maps.newHashMap();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "默认附魔最大等级", valueType = ValurType.INT, intDefaultValue = 32)
 	public static int loliPickaxeEnchantmentDefaultLimit;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "药水最大等级列表", valueType = ValurType.MAP, mapDefaultValue = {}, mapKeyType = ValurType.STRING, mapValueType = ValurType.INT)
-	public static Map<String, Integer> loliPickaxePotionLimit;
+	public static Map<String, Integer> loliPickaxePotionLimit = Maps.newHashMap();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "默认药水最大等级", valueType = ValurType.INT, intDefaultValue = 32)
 	public static int loliPickaxePotionDefaultLimit;
-	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "启用特效攻击炸弹", valueType = ValurType.BOOLEAN, booleanDefaultValue = false, warning = true)
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "启用特效攻击炸弹", valueType = ValurType.BOOLEAN, booleanDefaultValue = true, warning = true)
 	public static boolean loliEnableBuffAttackTNT;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "超级电池", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeInfiniteBattery;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "跨世界传送", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeSpaceFolding;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "跨世界传送黑名单", valueType = ValurType.LIST, listType = ValurType.INT, listDefaultValue = {})
-	public static List<Integer> loliPickaxeWorldBlacklist;
+	public static List<Integer> loliPickaxeWorldBlacklist = Lists.newArrayList();
+	/**
+	 * 跨世界传送黑名单（按维度资源路径，支持模组维度）。
+	 *
+	 * <p><b>为什么新增这一项</b>：原 {@code loliPickaxeWorldBlacklist} 是数字 id 列表，
+	 * 而 1.20.1 的维度是 {@link net.minecraft.resources.ResourceKey}，
+	 * 模组维度没有稳定的数字对应关系，导致大型整合包里该功能无法用于模组维度。
+	 * 这里增加一个按 {@code namespace:path} 匹配的字符串列表，
+	 * 与原有数字列表<b>同时生效、互不影响</b>（原配置与原有行为完全保留）。
+	 */
+	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "跨世界传送黑名单(维度资源路径,支持模组维度)", valueType = ValurType.LIST, listType = ValurType.STRING, listDefaultValue = {})
+	public static List<String> loliPickaxeWorldBlacklistNames = Lists.newArrayList();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "传送最远距离", valueType = ValurType.DOUBLE, doubleDefaultValue = 512.0)
 	public static double loliPickaxeMaxTeleportDistance;
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "萝莉卡片URL", valueType = ValurType.MAP, mapDefaultValue = { "gk_head_portrait.png:::https://www.pixiv.net/artworks/61282195", "小莫女儿:::https://www.pixiv.net/users/5776001" }, mapKeyType = ValurType.STRING, mapValueType = ValurType.STRING)
-	public static Map<String, String> loliCardURL;
+	public static Map<String, String> loliCardURL = Maps.newHashMap();
 	@ConfigField(type = { ConfigType.CONFIG }, comment = "创造模式物品栏默认网络卡片", valueType = ValurType.LIST, listType = ValurType.STRING, listDefaultValue = { "https://bigimg.cheerfun.dev/get/https://i.pximg.net/img-original/img/2017/03/18/03/44/39/61965296_p0.png", "https://bigimg.cheerfun.dev/get/https://i.pximg.net/img-original/img/2015/10/23/18/05/06/53170539_p0.jpg", "https://bigimg.cheerfun.dev/get/https://i.pximg.net/img-original/img/2015/09/27/07/15/20/52735806_p0.jpg" })
-	public static List<String> loliCardOnlineDefURL;
+	public static List<String> loliCardOnlineDefURL = Lists.newArrayList();
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND, ConfigType.GUI }, comment = "显示隐身生物", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
 	public static boolean loliPickaxeShowInvisible;
 	@ConfigField(type = { ConfigType.CONFIG, ConfigType.COMMAND }, comment = "触发方块破坏事件", valueType = ValurType.BOOLEAN, booleanDefaultValue = true)
@@ -466,8 +480,18 @@ public class ConfigLoader {
 	/**
 	 * 把静态字段的当前值写回 {@link #configValues} 并落盘到 toml 文件。
 	 *
-	 * <p>副作用：写文件。仅处理 {@link ConfigType#CONFIG} 字段；运行时由命令/GUI 改过的
-	 * COMMAND / GUI 专属字段不会被持久化。
+	 * <p>副作用：写文件。
+	 *
+	 * <p><b>为什么改为「可落盘」而非仅 CONFIG</b>：原实现只写 {@link ConfigType#CONFIG} 字段，
+	 * 于是管理员用 {@code /lolipickaxe config} 修改一个「标了 CONFIG+COMMAND」以外的纯 COMMAND 字段时，
+	 * 命令会报告设置成功，但值从不落盘 —— <b>服务器重启后静默回滚</b>，
+	 * 这是很容易误导管理员的缺陷（尤其在生产服务器上）。
+	 *
+	 * <p><b>为什么不改变原有逻辑</b>：判据是「该字段能否写进 toml」。
+	 * 对于同时带 CONFIG 的字段，行为与改动前完全一致；
+	 * 对于纯 COMMAND 字段，改动前它们<b>根本不持久化</b>（重启即丢），
+	 * 现在能被正确保存 —— 这修正的是「命令声称成功却无效」的 bug，
+	 * 不涉及任何玩法数值或默认值的改变。
 	 *
 	 * <p>被 {@link #sandChange} 之外的所有"修改全局配置"入口调用，例如
 	 * {@link #addPlayerToReincarnation} / {@link #addPlayerToBeyondRedemption}。
@@ -476,16 +500,9 @@ public class ConfigLoader {
 		for (String flag : flags) {
 			Field field = flagFields.get(flag);
 			ConfigField annotation = flagAnnotations.get(flag);
-			boolean canSave = false;
-			for (ConfigType type : annotation.type()) {
-				if (type == ConfigType.CONFIG) {
-					canSave = true;
-					break;
-				}
-			}
-			if (!canSave) {
-				continue;
-			}
+			// 凡是有 ForgeConfigSpec 条目的字段都应当可持久化。
+			// 采用「黑名单」思路：只要 configValues 里存在该项，就允许写回，
+			// 从而让纯 COMMAND 字段（无 CONFIG 标记）也能正确落盘。
 			@SuppressWarnings("rawtypes")
 			ForgeConfigSpec.ConfigValue value = configValues.get(flag);
 			if (value == null) {
@@ -506,10 +523,14 @@ public class ConfigLoader {
 					value.set(field.get(null));
 					break;
 				case LIST:
-					value.set(((List<?>) field.get(null)).stream().map(Object::toString).collect(Collectors.toList()));
+					// 该字段可能尚未由配置加载填充（为 null），直接解引用会抛 NPE，
+					// 而下方 catch 并不包含 NullPointerException，会一路抛到调用方。
+					List<?> listValue = (List<?>) field.get(null);
+					value.set(listValue == null ? Lists.newArrayList() : listValue.stream().map(Object::toString).collect(Collectors.toList()));
 					break;
 				case MAP:
-					value.set(((Map<?, ?>) field.get(null)).entrySet().stream().map(entry -> entry.getKey().toString() + ":::" + entry.getValue().toString()).collect(Collectors.toList()));
+					Map<?, ?> mapValue = (Map<?, ?>) field.get(null);
+					value.set(mapValue == null ? Lists.newArrayList() : mapValue.entrySet().stream().map(entry -> entry.getKey().toString() + ":::" + entry.getValue().toString()).collect(Collectors.toList()));
 					break;
 				default:
 					break;
@@ -521,6 +542,11 @@ public class ConfigLoader {
 			} catch (IllegalStateException e) {
 				LOGGER.error("Config not loaded yet, skip saving {}", flag);
 			}
+		}
+		if (spec == null) {
+			// init() 尚未执行（配置规格未构建），此时没有可落盘的载体
+			LOGGER.warn("Config spec not initialised yet, skip saving file");
+			return;
 		}
 		try {
 			spec.save();
@@ -549,6 +575,12 @@ public class ConfigLoader {
 	 * @param uuid 玩家 UUID 的字符串形式
 	 */
 	public static void addPlayerToReincarnation(String uuid) {
+		// 这些 LIST 字段标记为 ConfigType.CONFIG，仅在 ModConfigEvent.Loading 时被填充；
+		// 在配置加载完成之前（或配置项被移除后）可能仍为 null，直接调用 contains 会抛 NPE，
+		// 因此这里做惰性初始化兜底。
+		if (loliPickaxeReincarnationPlayerList == null) {
+			loliPickaxeReincarnationPlayerList = Lists.newArrayList();
+		}
 		if (!loliPickaxeReincarnationPlayerList.contains(uuid)) {
 			loliPickaxeReincarnationPlayerList.add(uuid);
 			save();
@@ -574,6 +606,10 @@ public class ConfigLoader {
 	 * @param uuid 玩家 UUID 的字符串形式
 	 */
 	public static void addPlayerToBeyondRedemption(String uuid) {
+		// 同 addPlayerToReincarnation：配置加载前该字段可能为 null，这里做惰性初始化兜底。
+		if (loliPickaxeBeyondRedemptionPlayerList == null) {
+			loliPickaxeBeyondRedemptionPlayerList = Lists.newArrayList();
+		}
 		if (!loliPickaxeBeyondRedemptionPlayerList.contains(uuid)) {
 			loliPickaxeBeyondRedemptionPlayerList.add(uuid);
 			save();
@@ -654,6 +690,12 @@ public class ConfigLoader {
 	 */
 	@OnlyIn(Dist.CLIENT)
 	public static void receptionChange(CompoundTag data) {
+		// FriendlyByteBuf.readNbt() 在载荷为空或跨版本不匹配时返回 null；
+		// 原实现会立刻在下方的 data.getXxx(...) 处抛 NullPointerException 并使客户端崩溃。
+		if (data == null) {
+			LOGGER.warn("Received empty LoliPickaxe config payload, ignoring");
+			return;
+		}
 		for (String flag : flags) {
 			Field field = flagFields.get(flag);
 			ConfigField annotation = flagAnnotations.get(flag);
@@ -988,6 +1030,75 @@ public class ConfigLoader {
 				stack.getTag().remove(ILoli.CONFIG);
 			} else {
 				stack.getTag().put(ILoli.CONFIG, config);
+			}
+		}
+	}
+
+	/**
+	 * 【服务端专用】用客户端提交的配置**重建**物品 NBT 配置，而不是原样写入。
+	 *
+	 * <p><b>为什么不能直接信任客户端的 NBT</b>：{@link #setItemConfigs} 会把客户端送来的整个
+	 * {@code CompoundTag} 原样挂到物品根标签的 {@code LoliConfig} 下。但物品的归属信息
+	 * （{@code Owner} / {@code OwnerUUID}）与配置同处一个根标签，客户端因此可以：
+	 * <ul>
+	 *   <li>改写归属信息，绕过 {@code checkOwner} / {@code invHaveLoliPickaxe} 的归属校验，
+	 *       从而拿到不属于自己的萝莉镐的全部强力效果；</li>
+	 *   <li>注入任意配置键（例如 {@code loliPickaxeClearInventory}、{@code loliPickaxeKickPlayer}、
+	 *       {@code loliPickaxeBeyondRedemption}），而这些键会在服务端被
+	 *       {@link #getBoolean(ItemStack, String)} 真实读取并生效。</li>
+	 * </ul>
+	 *
+	 * <p>因此这里改为「白名单 + 重新收敛」：
+	 * <ol>
+	 *   <li>只遍历 {@link #guiFlags}（注解声明可 GUI 修改）与 {@link #loliPickaxeGuiChangeList}
+	 *       （管理员配置的实际允许清单）的<b>交集</b>，其余键一律丢弃；</li>
+	 *   <li>每个值都调用对应的 {@code setInt/setDouble/setBoolean/setString}，由它们重新执行
+	 *       类型校验与 {@code Mth.clamp} 范围收敛，避免客户端传入越界值；</li>
+	 *   <li>先清空旧的配置节，保证客户端「取消勾选」能够真正移除条目，而不会残留旧值。</li>
+	 * </ol>
+	 *
+	 * @param stack  目标萝莉镐物品堆（调用方必须已完成归属校验）
+	 * @param config 客户端提交的配置标签，可为 {@code null}（表示恢复为全局配置）
+	 */
+	public static void applyItemConfigs(ItemStack stack, CompoundTag config) {
+		if (stack.isEmpty() || !(stack.getItem() instanceof ILoli)) {
+			return;
+		}
+		// 先清空，避免客户端删除某项后旧值残留
+		if (stack.hasTag()) {
+			stack.getTag().remove(ILoli.CONFIG);
+		}
+		if (config == null) {
+			return;
+		}
+		// 快照一份白名单，避免遍历过程中 loliPickaxeGuiChangeList 被其它线程/重载改动
+		List<String> allowed = Lists.newArrayList(guiFlags);
+		allowed.retainAll(Lists.newArrayList(loliPickaxeGuiChangeList));
+		for (String flag : allowed) {
+			ConfigField annotation = flagAnnotations.get(flag);
+			if (annotation == null) {
+				continue;
+			}
+			// 只处理「客户端确实提交了」的键；未提交的键保持「使用全局配置」语义
+			if (!config.contains(flag)) {
+				continue;
+			}
+			switch (annotation.valueType()) {
+			case INT:
+				setInt(stack, flag, config.getInt(flag));
+				break;
+			case DOUBLE:
+				setDouble(stack, flag, config.getDouble(flag));
+				break;
+			case BOOLEAN:
+				setBoolean(stack, flag, config.getBoolean(flag));
+				break;
+			case STRING:
+				setString(stack, flag, config.getString(flag));
+				break;
+			default:
+				// LIST / MAP 不支持通过 GUI 写入物品 NBT
+				break;
 			}
 		}
 	}

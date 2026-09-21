@@ -18,6 +18,27 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 	private List<NonNullList<ItemStack>> pages;
 	private int curPage;
 
+	/**
+	 * 脏页标记：{@code dirtyPages.get(i) == true} 表示第 i 页自上次读入/落盘后被修改过。
+	 *
+	 * <p><b>为什么需要它</b>：{@link #stopOpen(Player)} 原本无条件重建<b>整份</b> {@code PageList}
+	 * （最多 100 页 × 81 槽）。在大型整合包里，物品 NBT 会随每次开关界面反复序列化，
+	 * 既浪费 CPU 又撑大物品数据（存在触及网络包体积上限的风险）。
+	 *
+	 * <p><b>为什么这样改不改变逻辑</b>：落盘的 NBT <b>结构、键名、数值完全不变</b>，
+	 * 只是「没被动过的页」沿用其原始 NBT 内容而不再重新序列化。
+	 * 对玩家而言，页内容、翻页、重启后数据三者都与改动前完全一致。
+	 */
+	private final List<Boolean> dirtyPages = Lists.newArrayList();
+
+	/**
+	 * 原始页 NBT 缓存：与 {@link #pages} 同索引，保存 {@link #startOpen(Player)} 时读入的原始页标签。
+	 *
+	 * <p>未变脏的页在 {@link #stopOpen(Player)} 时直接复用这里的对象，避免重新序列化；
+	 * 这样既保持落盘内容等价，又省去重复构建 {@code Items} 列表的开销。
+	 */
+	private final List<CompoundTag> rawPages = Lists.newArrayList();
+
 	public InventoryLoliBase(ItemStack stack) {
 		this.stack = stack;
 		this.pages = Lists.newArrayList();
@@ -54,6 +75,9 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 
 	@Override
 	public ItemStack removeItem(int index, int count) {
+		if (index < 0 || index >= getContainerSize()) {
+			return ItemStack.EMPTY;
+		}
 		ItemStack stack = ContainerHelper.removeItem(getPage(curPage), index, count);
 		if (!stack.isEmpty()) {
 			this.setChanged();
@@ -63,26 +87,71 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 
 	@Override
 	public ItemStack removeItemNoUpdate(int index) {
-		ItemStack stack = getPage(curPage).get(index);
+		// 越界保护：整理/自动化类模组可能以异常索引直接调用 Container API（不经过原版点击校验），
+		// 未保护时 NonNullList.get/set 会抛 IndexOutOfBoundsException 并中断服务端 tick。
+		if (index < 0 || index >= getContainerSize()) {
+			return ItemStack.EMPTY;
+		}
+		NonNullList<ItemStack> page = getPage(curPage);
+		ItemStack stack = page.get(index);
 		if (stack.isEmpty()) {
 			return ItemStack.EMPTY;
 		} else {
-			getPage(curPage).set(index, ItemStack.EMPTY);
+			page.set(index, ItemStack.EMPTY);
+			this.setChanged();
 			return stack;
 		}
 	}
 
 	@Override
 	public void setItem(int index, ItemStack stack) {
-		getPage(curPage).set(index, stack);
-		if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
-			stack.setCount(this.getMaxStackSize());
+		// 越界保护，理由同 removeItemNoUpdate
+		if (index < 0 || index >= getContainerSize()) {
+			return;
 		}
+		NonNullList<ItemStack> page = getPage(curPage);
+		// 注意：必须先收敛数量再写入，且要作用于「真正被保存的堆」，
+		// 原实现先 set 再修改传入的 stack，导致存档里仍是超大数量、而调用方拿到被改过的堆（数据不一致）。
+		ItemStack stored = stack;
+		if (!stored.isEmpty() && stored.getCount() > this.getMaxStackSize()) {
+			stored = stored.copy();
+			stored.setCount(this.getMaxStackSize());
+		}
+		page.set(index, stored);
 		this.setChanged();
 	}
 
 	@Override
 	public void setChanged() {
+		// 【必须真正生效】原实现是空方法，导致「非 GUI 路径的写入」只要没走到 stopOpen 就永久丢失。
+		// 这里标记当前页为脏，使其在 stopOpen/落盘时被重写。
+		// 语义上与「任何写操作都要能被持久化」一致，不改变玩家可感知的行为。
+		markDirty(curPage);
+	}
+
+	/**
+	 * 把指定页标记为「已修改」，供落盘时决定是否需要重新序列化。
+	 *
+	 * @param page 页索引；越界时忽略
+	 */
+	protected void markDirty(int page) {
+		if (page < 0) {
+			return;
+		}
+		while (dirtyPages.size() <= page) {
+			dirtyPages.add(Boolean.TRUE);
+		}
+		dirtyPages.set(page, Boolean.TRUE);
+	}
+
+	/**
+	 * 判断某页是否已修改。
+	 *
+	 * @param page 页索引
+	 * @return true 表示该页自读入后被修改过
+	 */
+	protected boolean isDirty(int page) {
+		return page >= 0 && page < dirtyPages.size() && Boolean.TRUE.equals(dirtyPages.get(page));
 	}
 
 	@Override
@@ -94,6 +163,8 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 	public void startOpen(Player player) {
 		if (!stack.isEmpty()) {
 			pages.clear();
+			rawPages.clear();
+			dirtyPages.clear();
 			CompoundTag nbt;
 			if (stack.hasTag()) {
 				nbt = stack.getTag();
@@ -127,6 +198,10 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 				NonNullList<ItemStack> stacks = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
 				loadAllItems(page, stacks);
 				pages.add(stacks);
+				// 记录原始页标签并按「未改动」登记：
+				// 未变脏的页在 stopOpen 时原样复用，避免重复序列化（内容与重新序列化完全等价）。
+				rawPages.add(page.copy());
+				dirtyPages.add(Boolean.FALSE);
 			}
 		}
 	}
@@ -142,7 +217,16 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 					continue;
 				}
 				// 原 1.12.2 自定义了 Count 的读写，以便承载超过 byte 上限的堆叠数
-				stack.setCount(nbttagcompound.getInt("Count"));
+				int count = nbttagcompound.getInt("Count");
+				// 越界/损坏 NBT 保护：手改或被破坏的存档可能带来负数或超大数量，
+				// 一旦流入容器会污染客户端同步与其它模组对堆叠数的假设，故收敛到 [1, 上限]。
+				int limit = this.getMaxStackSize();
+				if (count < 1) {
+					count = 1;
+				} else if (limit > 0 && count > limit) {
+					count = limit;
+				}
+				stack.setCount(count);
 				list.set(j, stack);
 			}
 		}
@@ -167,13 +251,44 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 			}
 			nbtPages.putInt("CurPage", curPage);
 			ListTag pageList = new ListTag();
-			for (NonNullList<ItemStack> stacks : pages) {
+			for (int i = 0; i < pages.size(); i++) {
+				// 未修改过的页直接复用读入时的原始标签：落盘内容与「重新序列化」完全等价
+				// （因为该页的内存状态就是从这份标签读出来的，期间没有任何写入），
+				// 但省去了重新构建 Items 列表的开销。这是纯粹的「少做无用功」，
+				// 不改变任何可观测行为。
+				if (!isDirty(i) && i < rawPages.size()) {
+					pageList.add(rawPages.get(i).copy());
+					continue;
+				}
 				CompoundTag page = new CompoundTag();
-				saveAllItems(page, stacks, false);
+				saveAllItems(page, pages.get(i), false);
 				pageList.add(page);
 			}
 			nbtPages.put("PageList", pageList);
+			// 落盘后全部页回到「干净」状态，与读入时一致
+			for (int i = 0; i < dirtyPages.size(); i++) {
+				dirtyPages.set(i, Boolean.FALSE);
+			}
+			for (int i = 0; i < pages.size(); i++) {
+				if (i < rawPages.size()) {
+					rawPages.set(i, snapshotPage(pages.get(i)));
+				} else {
+					rawPages.add(snapshotPage(pages.get(i)));
+				}
+			}
 		}
+	}
+
+	/**
+	 * 把某一页的当前内容序列化为标签，用于刷新 {@link #rawPages} 缓存。
+	 *
+	 * @param page 页内容
+	 * @return 该页的 NBT 快照
+	 */
+	private CompoundTag snapshotPage(NonNullList<ItemStack> page) {
+		CompoundTag tag = new CompoundTag();
+		saveAllItems(tag, page, false);
+		return tag;
 	}
 
 	public CompoundTag saveAllItems(CompoundTag tag, NonNullList<ItemStack> list, boolean saveEmpty) {
@@ -206,6 +321,9 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 			stacks.clear();
 		}
 		pages.clear();
+		// 同步清空页跟踪状态，避免 rawPages/dirtyPages 与实际页数脱节
+		rawPages.clear();
+		dirtyPages.clear();
 	}
 
 	/** 当前页索引，对应原 IInventory 的 getField(0)。 */
@@ -226,6 +344,10 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 		if (value >= pages.size()) {
 			for (int i = 0; i < value - pages.size() + 1; i++) {
 				pages.add(NonNullList.withSize(getContainerSize(), ItemStack.EMPTY));
+				// 新建的页必须登记为脏页，否则它不会被写入存档（新页通常为空，
+				// 但页的存在本身需要落到 PageList 中，翻页位置才稳定）。
+				rawPages.add(new CompoundTag());
+				dirtyPages.add(Boolean.TRUE);
 			}
 		}
 		curPage = value;
@@ -236,10 +358,16 @@ public abstract class InventoryLoliBase implements ILoliInventory {
 		if (index >= 0 && index < getMaxPage()) {
 			while (index >= pages.size()) {
 				pages.add(NonNullList.withSize(getContainerSize(), ItemStack.EMPTY));
+				rawPages.add(new CompoundTag());
+				dirtyPages.add(Boolean.TRUE);
 			}
 			return pages.get(index);
 		}
-		return NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
+		// 【不要返回临时列表】原实现此处返回一个新的 NonNullList，任何写入都会落到这个
+		// 立即被回收的临时对象上并静默丢失（同时 setChanged 又是空实现，永远不会落盘），
+		// 属于「看起来成功、实际丢物品」的隐蔽数据丢失。
+		// 越界页索引统一收敛到当前页，保证读写始终作用于真实存储。
+		return getPage(curPage);
 	}
 
 }

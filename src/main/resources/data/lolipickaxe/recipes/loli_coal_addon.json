@@ -1,0 +1,18 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"group": "lolipickaxe:loli_coal_addon",
+	"category": "misc",
+	"pattern": ["XYX", "YXY", "XYX"],
+	"key": {
+		"X": {
+			"item": "minecraft:coal"
+		},
+		"Y": {
+			"item": "minecraft:coal_block"
+		}
+	},
+	"result": {
+		"item": "lolipickaxe:loli_coal_addon",
+		"count": 1
+	}
+}

@@ -18,16 +18,16 @@ public class LoliDropEvent {
 		LivingEntity entity = event.getEntity();
 		Level level = entity.level();
 		if (level.random.nextDouble() < ConfigLoader.loliCardDropProbability) {
-			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.loliCard)));
+			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.loliCard())));
 		}
 		if (level.random.nextDouble() < ConfigLoader.loliCardAlbumDropProbability) {
-			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.loliCardAlbum)));
+			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.loliCardAlbum())));
 		}
 		if (!ItemLoader.loliRecords.isEmpty() && entity instanceof Creeper && level.random.nextDouble() < ConfigLoader.loliRecordDropProbability) {
 			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.loliRecords.get(level.random.nextInt(ItemLoader.loliRecords.size())))));
 		}
 		if (level.random.nextDouble() < ConfigLoader.entitySoulDropProbability) {
-			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.entitySoul)));
+			event.getDrops().add(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(ItemLoader.entitySoul())));
 		}
 	}
 

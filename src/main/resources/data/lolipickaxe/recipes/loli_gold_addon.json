@@ -1,0 +1,18 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"group": "lolipickaxe:loli_gold_addon",
+	"category": "misc",
+	"pattern": ["XYX", "YXY", "XYX"],
+	"key": {
+		"X": {
+			"item": "minecraft:gold_ingot"
+		},
+		"Y": {
+			"item": "minecraft:gold_block"
+		}
+	},
+	"result": {
+		"item": "lolipickaxe:loli_gold_addon",
+		"count": 1
+	}
+}

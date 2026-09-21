@@ -30,13 +30,13 @@ public class CreativeTabLoader {
 	static {
 		loliTabs = CreativeModeTab.builder()
 				.title(Component.translatable("itemGroup.loli"))
-				.icon(() -> new ItemStack(ItemLoader.loliPickaxe))
+				.icon(() -> new ItemStack(ItemLoader.loliPickaxe()))
 				.build();
 		loliRecipeTabs = CreativeModeTab.builder()
 				.title(Component.translatable("itemGroup.loliRecipe"))
 				.icon(() -> {
-					ItemStack stack = new ItemStack(ItemLoader.entitySoul);
-					stack.setDamageValue(ItemLoader.entitySoul.getSubCount() - 1);
+					ItemStack stack = new ItemStack(ItemLoader.entitySoul());
+					stack.setDamageValue(ItemLoader.entitySoul().getSubCount() - 1);
 					return stack;
 				})
 				.build();
@@ -62,20 +62,20 @@ public class CreativeTabLoader {
 	}
 
 	private static void fillLoliTabs(CreativeModeTab.Output output) {
-		ItemLoader.loliPickaxe.fillItemCategory(loliTabs, output);
-		ItemLoader.smallLoliPickaxe.fillItemCategory(loliTabs, output);
-		output.accept(new ItemStack(ItemLoader.loliDispersal));
-		output.accept(new ItemStack(ItemLoader.bugEntityClear));
-		ItemLoader.loliCard.fillItemCategory(loliTabs, output);
-		ItemLoader.loliCardAlbum.fillItemCategory(loliTabs, output);
-		ItemLoader.loliCardOnline.fillItemCategory(loliTabs, output);
+		ItemLoader.loliPickaxe().fillItemCategory(loliTabs, output);
+		ItemLoader.smallLoliPickaxe().fillItemCategory(loliTabs, output);
+		output.accept(new ItemStack(ItemLoader.loliDispersal()));
+		output.accept(new ItemStack(ItemLoader.bugEntityClear()));
+		ItemLoader.loliCard().fillItemCategory(loliTabs, output);
+		ItemLoader.loliCardAlbum().fillItemCategory(loliTabs, output);
+		ItemLoader.loliCardOnline().fillItemCategory(loliTabs, output);
 		for (ItemLoliRecord record : ItemLoader.loliRecords) {
 			output.accept(new ItemStack(record));
 		}
 	}
 
 	private static void fillLoliRecipeTabs(CreativeModeTab.Output output) {
-		ItemLoliPickaxeMaterial[] materials = { ItemLoader.coalAddon, ItemLoader.ironAddon, ItemLoader.goldAddon, ItemLoader.redstoneAddon, ItemLoader.lapisAddon, ItemLoader.diamondAddon, ItemLoader.emeraldAddon, ItemLoader.obsidianAddon, ItemLoader.glowAddon, ItemLoader.quartzAddon, ItemLoader.netherStarAddon, ItemLoader.autoFurnaceAddon, ItemLoader.flyAddon, ItemLoader.entitySoul };
+		ItemLoliPickaxeMaterial[] materials = { ItemLoader.coalAddon(), ItemLoader.ironAddon(), ItemLoader.goldAddon(), ItemLoader.redstoneAddon(), ItemLoader.lapisAddon(), ItemLoader.diamondAddon(), ItemLoader.emeraldAddon(), ItemLoader.obsidianAddon(), ItemLoader.glowAddon(), ItemLoader.quartzAddon(), ItemLoader.netherStarAddon(), ItemLoader.autoFurnaceAddon(), ItemLoader.flyAddon(), ItemLoader.entitySoul() };
 		for (ItemLoliPickaxeMaterial material : materials) {
 			material.fillItemCategory(loliRecipeTabs, output);
 		}

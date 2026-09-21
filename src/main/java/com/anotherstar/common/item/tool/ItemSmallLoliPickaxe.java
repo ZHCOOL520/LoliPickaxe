@@ -66,26 +66,26 @@ public class ItemSmallLoliPickaxe extends Item implements IContainer {
 	private static ItemStack full = null;
 
 	private static void init() {
-		nbtMap.put(ItemLoader.coalAddon, "LoliDodge");
-		nbtMap.put(ItemLoader.ironAddon, "LoliDiggingSpeed");
-		nbtMap.put(ItemLoader.goldAddon, "LoliAttackDamage");
-		nbtMap.put(ItemLoader.redstoneAddon, "LoliAttackSpeed");
-		nbtMap.put(ItemLoader.lapisAddon, "LoliFortuneLevel");
-		nbtMap.put(ItemLoader.diamondAddon, "LoliDiggingLevel");
-		nbtMap.put(ItemLoader.emeraldAddon, "LoliDiggingRange");
-		nbtMap.put(ItemLoader.obsidianAddon, "LoliAntiInjury");
-		nbtMap.put(ItemLoader.glowAddon, "LoliBuff");
-		nbtMap.put(ItemLoader.quartzAddon, "LoliHitRange");
-		nbtMap.put(ItemLoader.netherStarAddon, "LoliBackpackPage");
-		nbtMap.put(ItemLoader.autoFurnaceAddon, "LoliAutoFurnace");
-		nbtMap.put(ItemLoader.flyAddon, "LoliFly");
-		full = new ItemStack(ItemLoader.smallLoliPickaxe);
+		nbtMap.put(ItemLoader.coalAddon(), "LoliDodge");
+		nbtMap.put(ItemLoader.ironAddon(), "LoliDiggingSpeed");
+		nbtMap.put(ItemLoader.goldAddon(), "LoliAttackDamage");
+		nbtMap.put(ItemLoader.redstoneAddon(), "LoliAttackSpeed");
+		nbtMap.put(ItemLoader.lapisAddon(), "LoliFortuneLevel");
+		nbtMap.put(ItemLoader.diamondAddon(), "LoliDiggingLevel");
+		nbtMap.put(ItemLoader.emeraldAddon(), "LoliDiggingRange");
+		nbtMap.put(ItemLoader.obsidianAddon(), "LoliAntiInjury");
+		nbtMap.put(ItemLoader.glowAddon(), "LoliBuff");
+		nbtMap.put(ItemLoader.quartzAddon(), "LoliHitRange");
+		nbtMap.put(ItemLoader.netherStarAddon(), "LoliBackpackPage");
+		nbtMap.put(ItemLoader.autoFurnaceAddon(), "LoliAutoFurnace");
+		nbtMap.put(ItemLoader.flyAddon(), "LoliFly");
+		full = new ItemStack(ItemLoader.smallLoliPickaxe());
 		CompoundTag nbt = new CompoundTag();
 		for (Entry<ItemLoliPickaxeMaterial, String> entry : ItemSmallLoliPickaxe.nbtMap.entrySet()) {
 			nbt.putInt(entry.getValue(), entry.getKey().getSubCount() - 1);
 		}
 		full.setTag(nbt);
-		ItemLoader.smallLoliPickaxe.updateEnchantment(full);
+		ItemLoader.smallLoliPickaxe().updateEnchantment(full);
 	}
 
 	public static ItemStack getFull() {
@@ -407,9 +407,28 @@ public class ItemSmallLoliPickaxe extends Item implements IContainer {
 		return stack.hasTag() && stack.getTag().contains("LoliBackpackPage");
 	}
 
+	/**
+	 * 每个小型萝莉镐物品堆对应唯一的容器实例缓存，理由与
+	 * {@link ItemLoliPickaxe#getInventory(ItemStack)} 完全一致：
+	 * 避免同一物品出现多个内存视图，导致 {@code stopOpen} 互相整份覆盖而丢物品。
+	 * 使用弱引用以免长时间运行时缓存无界增长。
+	 */
+	private static final Map<ItemStack, java.lang.ref.WeakReference<InventorySmallLoliPickaxe>> INVENTORY_CACHE = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
 	@Override
 	public ILoliInventory getInventory(ItemStack stack) {
-		return new InventorySmallLoliPickaxe(stack);
+		if (stack.isEmpty()) {
+			return new InventorySmallLoliPickaxe(stack);
+		}
+		synchronized (INVENTORY_CACHE) {
+			java.lang.ref.WeakReference<InventorySmallLoliPickaxe> ref = INVENTORY_CACHE.get(stack);
+			InventorySmallLoliPickaxe cached = ref == null ? null : ref.get();
+			if (cached == null) {
+				cached = new InventorySmallLoliPickaxe(stack);
+				INVENTORY_CACHE.put(stack, new java.lang.ref.WeakReference<>(cached));
+			}
+			return cached;
+		}
 	}
 
 	public int getMaxPage(ItemStack stack) {

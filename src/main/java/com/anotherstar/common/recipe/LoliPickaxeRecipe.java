@@ -33,16 +33,16 @@ public class LoliPickaxeRecipe extends CustomRecipe {
 		for (int i = 0; i < inv.getContainerSize(); i++) {
 			ItemStack stack = inv.getItem(i);
 			if (!stack.isEmpty()) {
-				if (stack.getItem() == ItemLoader.smallLoliPickaxe && loli.isEmpty()) {
+				if (stack.getItem() == ItemLoader.smallLoliPickaxe() && loli.isEmpty()) {
 					loli = stack;
-				} else if (stack.getItem() == ItemLoader.entitySoul && soul.isEmpty()) {
+				} else if (stack.getItem() == ItemLoader.entitySoul() && soul.isEmpty()) {
 					soul = stack;
 				} else {
 					return false;
 				}
 			}
 		}
-		if (loli.isEmpty() || !loli.hasTag() || soul.isEmpty() || soul.getDamageValue() != ItemLoader.entitySoul.getSubCount() - 1) {
+		if (loli.isEmpty() || !loli.hasTag() || soul.isEmpty() || soul.getDamageValue() != ItemLoader.entitySoul().getSubCount() - 1) {
 			return false;
 		}
 		CompoundTag nbt = loli.getTag();
@@ -59,7 +59,7 @@ public class LoliPickaxeRecipe extends CustomRecipe {
 		ItemStack loli = ItemStack.EMPTY;
 		for (int i = 0; i < inv.getContainerSize(); i++) {
 			ItemStack stack = inv.getItem(i);
-			if (!stack.isEmpty() && stack.getItem() == ItemLoader.smallLoliPickaxe) {
+			if (!stack.isEmpty() && stack.getItem() == ItemLoader.smallLoliPickaxe()) {
 				loli = stack;
 				break;
 			}

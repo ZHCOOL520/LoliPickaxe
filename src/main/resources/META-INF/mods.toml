@@ -1,14 +1,18 @@
 modLoader = "javafml"
 loaderVersion = "${loader_version_range}"
 license = "${mod_license}"
-issueTrackerURL = "https://github.com/ZHCOOL520/LoliPickaxe-1.20.1AI/issues"
+issueTrackerURL = "https://github.com/ZHCOOL520/LoliPickaxe/issues"
 
 [[mods]]
 modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "${mod_name}"
+# 大型整合包提示：displayTest 决定「客户端与服务端模组列表不一致时是否拒绝连接」。
+# IGNORE_ALL_VERSION 表示忽略本模组在两侧的版本/存在性差异，可避免整合包中
+# 「客户端装了、服务端没装」或版本号微差导致玩家直接被踢下线。
+displayTest = "IGNORE_ALL_VERSION"
 authors = "ZHCOOL520（1.20.1 Forge 移植）, Is_GK（1.12.2 原作者）"
-credits = '''1.20.1 Forge 移植：ZHCOOL520 — https://github.com/ZHCOOL520/LoliPickaxe-1.20.1AI
+credits = '''1.20.1 Forge 移植：ZHCOOL520 — https://github.com/ZHCOOL520/LoliPickaxe
 1.12.2 原作者：Is_GK — https://github.com/IslenautsGK/LoliPickaxe
 本移植版为原项目的衍生作品，沿用原项目 GPL-3.0 许可。'''
 description = '''氪金萝莉镐（LoliPickaxe）— Minecraft 1.20.1 Forge 移植版
@@ -23,7 +27,7 @@ description = '''氪金萝莉镐（LoliPickaxe）— Minecraft 1.20.1 Forge 移�
 移植：ZHCOOL520　原作者：Is_GK　许可：GPL-3.0'''
 logoFile = "logo.png"
 logoBlur = false
-displayURL = "https://github.com/ZHCOOL520/LoliPickaxe-1.20.1AI"
+displayURL = "https://github.com/ZHCOOL520/LoliPickaxe"
 
 [[dependencies.${mod_id}]]
 modId = "forge"

@@ -36,7 +36,7 @@ public class SmallLoliPickaxeRecipe extends CustomRecipe {
 		for (int i = 0; i < inv.getContainerSize(); i++) {
 			ItemStack stack = inv.getItem(i);
 			if (!stack.isEmpty()) {
-				if (stack.getItem() == ItemLoader.smallLoliPickaxe && loli.isEmpty()) {
+				if (stack.getItem() == ItemLoader.smallLoliPickaxe() && loli.isEmpty()) {
 					loli = stack;
 				} else if (nbtMap.containsKey(stack.getItem()) && !levels.containsKey(stack.getItem())) {
 					levels.put((ItemLoliPickaxeMaterial) stack.getItem(), stack.getDamageValue());
@@ -66,7 +66,7 @@ public class SmallLoliPickaxeRecipe extends CustomRecipe {
 		for (int i = 0; i < inv.getContainerSize(); i++) {
 			ItemStack stack = inv.getItem(i);
 			if (!stack.isEmpty()) {
-				if (stack.getItem() == ItemLoader.smallLoliPickaxe) {
+				if (stack.getItem() == ItemLoader.smallLoliPickaxe()) {
 					loli = stack;
 				} else {
 					addons.add(stack);
@@ -87,7 +87,7 @@ public class SmallLoliPickaxeRecipe extends CustomRecipe {
 			int level = nbt.contains(levelKey) ? nbt.getInt(levelKey) : -1;
 			nbt.putInt(levelKey, level + 1);
 		}
-		ItemLoader.smallLoliPickaxe.updateEnchantment(result);
+		ItemLoader.smallLoliPickaxe().updateEnchantment(result);
 		return result;
 	}
 

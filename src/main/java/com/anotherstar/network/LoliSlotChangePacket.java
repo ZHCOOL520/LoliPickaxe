@@ -28,12 +28,23 @@ public class LoliSlotChangePacket {
 		windowId = buf.readByte();
 		slotIndex = buf.readShort();
 		stack = buf.readItem();
+		// 【必须显式补发数量】原版 writeItem/readItem（FriendlyByteBuf.writeItemStack）内部用
+		// writeByte(count) 传输堆叠数，readItem 用 readByte() 还原，上限仅 127（甚至会被解释为负数）。
+		// 本包的存在意义正是同步「超过原版上限的堆叠数」，因此必须在此额外用 VarInt 传递真实数量；
+		// 否则 2000000000 会被 writeByte 截断成 0，客户端反而把 0 当作真实值写回槽位。
+		if (!stack.isEmpty()) {
+			stack.setCount(buf.readVarInt());
+		}
 	}
 
 	public void encode(FriendlyByteBuf buf) {
 		buf.writeByte(windowId);
 		buf.writeShort(slotIndex);
 		buf.writeItem(stack);
+		// 与 LoliSlotChangePacket(FriendlyByteBuf) 中的读取顺序严格对应
+		if (!stack.isEmpty()) {
+			buf.writeVarInt(stack.getCount());
+		}
 	}
 
 	public int getWindowId() {

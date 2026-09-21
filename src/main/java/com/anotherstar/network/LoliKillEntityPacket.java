@@ -51,7 +51,10 @@ public class LoliKillEntityPacket {
 				return;
 			}
 			Entity entity = mc.level.getEntity(msg.getEntityID());
-			if (entity instanceof LivingEntity) {
+			// 必须直接判断 ILoliDataHolder 而非 LivingEntity：
+			// 萝莉数据字段由 LivingEntityMixin 通过接口注入，若某个模组的生物实体未实现该接口，
+			// 原来的强制转换会抛 ClassCastException 并使客户端崩溃。
+			if (entity instanceof ILoliDataHolder) {
 				ILoliDataHolder holder = (ILoliDataHolder) entity;
 				holder.setLoliDead(true);
 				holder.setLoliCool(true);

@@ -41,7 +41,7 @@ public class EntityLoliBuffAttackTNT extends PrimedTnt {
 	 * @param levelIn 实体所在世界
 	 */
 	public EntityLoliBuffAttackTNT(Level levelIn) {
-		super(EntityLoader.LOLI_BUFF_ATTACK_TNT_TYPE, levelIn);
+		super(EntityLoader.LOLI_BUFF_ATTACK_TNT_TYPE(), levelIn);
 	}
 
 	/**
@@ -80,7 +80,7 @@ public class EntityLoliBuffAttackTNT extends PrimedTnt {
 				return (BlockBuffAttackTNT) block;
 			}
 		}
-		return BlockLoader.loliBlueScreenTNT;
+		return BlockLoader.loliBlueScreenTNT();
 	}
 
 	/**

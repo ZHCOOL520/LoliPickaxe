@@ -25,18 +25,18 @@ public class SuperpositionRecipe extends CustomRecipe {
 	private static final Map<Item, Integer> superpositionAble = Maps.newHashMap();
 
 	static {
-		registItem(ItemLoader.coalAddon);
-		registItem(ItemLoader.ironAddon);
-		registItem(ItemLoader.goldAddon);
-		registItem(ItemLoader.redstoneAddon);
-		registItem(ItemLoader.lapisAddon);
-		registItem(ItemLoader.diamondAddon);
-		registItem(ItemLoader.emeraldAddon);
-		registItem(ItemLoader.obsidianAddon);
-		registItem(ItemLoader.glowAddon);
-		registItem(ItemLoader.quartzAddon);
-		registItem(ItemLoader.netherStarAddon);
-		registItem(ItemLoader.entitySoul);
+		registItem(ItemLoader.coalAddon());
+		registItem(ItemLoader.ironAddon());
+		registItem(ItemLoader.goldAddon());
+		registItem(ItemLoader.redstoneAddon());
+		registItem(ItemLoader.lapisAddon());
+		registItem(ItemLoader.diamondAddon());
+		registItem(ItemLoader.emeraldAddon());
+		registItem(ItemLoader.obsidianAddon());
+		registItem(ItemLoader.glowAddon());
+		registItem(ItemLoader.quartzAddon());
+		registItem(ItemLoader.netherStarAddon());
+		registItem(ItemLoader.entitySoul());
 	}
 
 	public SuperpositionRecipe(ResourceLocation id, CraftingBookCategory category) {

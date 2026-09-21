@@ -38,7 +38,7 @@ public class SmallLoliBlockDropEvent {
 			return;
 		}
 		ServerPlayer player = (ServerPlayer) event.getPlayer();
-		if (player.getMainHandItem().getItem() != ItemLoader.smallLoliPickaxe) {
+		if (player.getMainHandItem().getItem() != ItemLoader.smallLoliPickaxe()) {
 			return;
 		}
 		collector = player;

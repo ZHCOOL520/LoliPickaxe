@@ -203,6 +203,92 @@ public class ContainerLoliPickaxe extends AbstractContainerMenu {
 			return;
 		}
 		super.clicked(slotId, dragType, clickTypeIn, playerIn);
+		// 【跨容器边界收敛】储藏室允许 20 亿堆叠，但玩家背包槽位没有同样的上限覆写。
+		// 原版 doClick 的数字键交换（SWAP）、创造模式中键复制（CLONE）与拖拽（QUICK_CRAFT）
+		// 都使用【目标槽位】的 getMaxStackSize，因此会把超大堆叠直接搬进玩家背包，
+		// 进而被写入 playerdata，破坏整理类模组/AE2 等对堆叠数 ≤64 的假设。
+		// 这里在原版逻辑执行「之后」统一清理：凡落在普通槽位上的超大堆叠，把超出部分退回储藏室。
+		// 该处理对储藏室内部的操作完全无影响，超大容量得以完整保留。
+		clampOverflowOutOfStorage(playerIn);
+	}
+
+	/**
+	 * 把因原版点击逻辑而「泄漏」到普通槽位上的超大堆叠收敛回储藏室。
+	 *
+	 * <p>只处理普通槽位（索引 ≥ {@code inventory.getContainerSize()}）中数量超过该物品原版上限的情况：
+	 * 保留原版上限的数量在普通槽位，其余部分尽力塞回储藏室；塞不下的部分丢弃到地面，
+	 * 以避免物品凭空消失，也避免异常堆叠数进入 playerdata。
+	 *
+	 * @param playerIn 操作玩家（仅服务端需要真正处理）
+	 */
+	private void clampOverflowOutOfStorage(Player playerIn) {
+		if (inventory == null || playerIn.level().isClientSide) {
+			return;
+		}
+		int storageSize = inventory.getContainerSize();
+		for (int i = storageSize; i < this.slots.size(); i++) {
+			Slot slot = this.slots.get(i);
+			ItemStack stack = slot.getItem();
+			if (stack.isEmpty()) {
+				continue;
+			}
+			int vanillaLimit = stack.getMaxStackSize();
+			if (vanillaLimit <= 0 || stack.getCount() <= vanillaLimit) {
+				continue;
+			}
+			int overflow = stack.getCount() - vanillaLimit;
+			ItemStack kept = stack.copy();
+			kept.setCount(vanillaLimit);
+			slot.set(kept);
+			// 超出部分优先塞回储藏室，塞不下的丢到玩家脚下（不凭空消失）
+			ItemStack toReturn = stack.copy();
+			toReturn.setCount(overflow);
+			ItemStack remainder = insertIntoStorage(toReturn);
+			if (!remainder.isEmpty()) {
+				playerIn.drop(remainder, false);
+			}
+		}
+	}
+
+	/**
+	 * 把物品尽量放入储藏室各槽位，返回放不下的剩余部分。
+	 *
+	 * @param stack 待放入的物品堆（不会被修改）
+	 * @return 未能放入的剩余部分；全部放入时返回 {@link ItemStack#EMPTY}
+	 */
+	private ItemStack insertIntoStorage(ItemStack stack) {
+		ItemStack remaining = stack.copy();
+		int storageSize = inventory.getContainerSize();
+		// 先尝试合并到同类型且未满的槽位，再尝试放入空槽位
+		for (int pass = 0; pass < 2 && !remaining.isEmpty(); pass++) {
+			for (int i = 0; i < storageSize && !remaining.isEmpty(); i++) {
+				ItemStack existing = inventory.getItem(i);
+				if (pass == 0) {
+					if (existing.isEmpty() || !ItemStack.isSameItemSameTags(existing, remaining)) {
+						continue;
+					}
+				} else if (!existing.isEmpty()) {
+					continue;
+				}
+				int limit = inventory.getMaxStackSize();
+				int space = limit - (pass == 0 ? existing.getCount() : 0);
+				if (space <= 0) {
+					continue;
+				}
+				int move = Math.min(space, remaining.getCount());
+				if (pass == 0) {
+					ItemStack merged = existing.copy();
+					merged.setCount(existing.getCount() + move);
+					inventory.setItem(i, merged);
+				} else {
+					ItemStack placed = remaining.copy();
+					placed.setCount(move);
+					inventory.setItem(i, placed);
+				}
+				remaining.shrink(move);
+			}
+		}
+		return remaining;
 	}
 
 	/**
@@ -278,8 +364,11 @@ public class ContainerLoliPickaxe extends AbstractContainerMenu {
 			return;
 		}
 		ServerPlayer serverPlayer = (ServerPlayer) player;
-		// 玩家背包槽位受原版 64 限制，无需补发；只有储藏室槽位可能超过原版同步包的上限
-		int size = Math.min(inventory.getContainerSize(), this.slots.size());
+		// 玩家背包槽位受原版 64 限制，无需补发；只有储藏室槽位可能超过原版同步包的上限。
+		// 注意：lastSlots 必须与 slots 等长。构造失败（物品不带容器）时 slots 仍会添加 36 个玩家背包槽位，
+		// 而 inventory 为 null（此时上面已提前 return）；但构造成功时 slots.size() = 81 + 36 = 117，
+		// 若仅用 inventory.getContainerSize()（81）作上界虽不越界，仍需三者取最小以保证 lastSlots.get(i) 安全。
+		int size = Math.min(Math.min(inventory.getContainerSize(), this.slots.size()), this.lastSlots.size());
 		for (int i = 0; i < size; ++i) {
 			ItemStack slotStack = this.slots.get(i).getItem();
 			ItemStack lastStack = this.lastSlots.get(i);

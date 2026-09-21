@@ -52,7 +52,7 @@ public class LoliPotionPacket {
 					}
 					int lvl = element.getByte("lvl");
 					ResourceLocation name = ForgeRegistries.MOB_EFFECTS.getKey(potion);
-					Integer limit = name == null ? null : ConfigLoader.loliPickaxePotionLimit.get(name.toString());
+					Integer limit = name == null || ConfigLoader.loliPickaxePotionLimit == null ? null : ConfigLoader.loliPickaxePotionLimit.get(name.toString());
 					if (limit != null) {
 						if (lvl > limit) {
 							element.putByte("lvl", (byte) (int) limit);
@@ -76,7 +76,25 @@ public class LoliPotionPacket {
 			// 因此不再兼容数字 id，只支持 "id" 为资源路径字符串的写法。
 			return null;
 		}
-		return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(name));
+		return ForgeRegistries.MOB_EFFECTS.getValue(parseId(name));
+	}
+
+	/**
+	 * 安全解析资源路径。
+	 *
+	 * <p>{@code "id"} 来自客户端提交的 NBT，构造 {@link ResourceLocation} 时遇到非法字符
+	 * （例如含空格、大写或缺省命名空间格式错误）会抛 {@code ResourceLocationException}，
+	 * 使包处理线程崩溃。这里统一捕获并返回 {@code null}，由调用方按「未知药水」处理。
+	 *
+	 * @param name 资源路径字符串
+	 * @return 解析成功时的 ResourceLocation，非法时为 null
+	 */
+	private static ResourceLocation parseId(String name) {
+		try {
+			return new ResourceLocation(name);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 }
